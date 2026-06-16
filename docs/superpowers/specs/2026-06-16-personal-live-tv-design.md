@@ -226,6 +226,9 @@ the user later wants basic protection.
 
 ## Future Considerations (out of scope now)
 
+- **App icon / logo** — hand-crafted SVG logo (scalable, crisp on OLED),
+  exported to the PNG sizes webOS requires for the IPK app icon and the web
+  favicon/PWA icons. Tuned to the dark UI palette.
 - Additional M3U sources behind the existing `/api/channels` abstraction
 - Migration to Cloudflare Pages if the app ever becomes commercial/public
   (Vercel free tier prohibits commercial use); the isolated cache/API layer
