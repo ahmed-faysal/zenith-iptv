@@ -234,3 +234,20 @@ the user later wants basic protection.
   (Vercel free tier prohibits commercial use); the isolated cache/API layer
   keeps this a contained change
 - Full EPG time-grid view
+
+### Ideas borrowed from iptv-org/awesome-iptv (evaluate later)
+
+- **Catchup / TV-archive** (seen in IPTVnator) — parse the `catchup` and
+  `catchup-source` attributes from `#EXTINF` lines to allow rewinding to earlier
+  programming on streams that support it. Small parser addition; high payoff for
+  joining live sports/news late.
+- **PWA install** (seen in Ellipto IPTV) — add a web manifest + service worker so
+  the app is installable on phones with a clean fullscreen launch. Complements the
+  webOS TV wrapper and improves the family/phone experience.
+- **Multi-source playlist merge** (seen in m3u.in) — already anticipated by the
+  `/api/channels` abstraction seam; would let users combine/curate playlists.
+- **Reference parsers** — IPTVnator (Angular/Electron) and Wizju (Vue 3) handle
+  unusual `#EXTINF` formats; worth reading for parser edge cases if our M3U
+  parser misses channels in the wild.
+- **Multi-view** (watch several channels at once, seen in GlobeTV/VidGrid) —
+  deliberately cut from v1; revisit if desired.
