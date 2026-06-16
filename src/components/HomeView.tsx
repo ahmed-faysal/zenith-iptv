@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Channel, AppCategory } from "@/lib/types";
 import { CategoryRow } from "./CategoryRow";
+import { SettingsPanel } from "./SettingsPanel";
 import { getFavorites, getRecents, getPrefs, setLastChannel, pushRecent } from "@/lib/storage";
 
 const ORDER: AppCategory[] = ["News", "Sports", "Entertainment", "Music", "Kids", "Other"];
@@ -11,6 +12,7 @@ export function HomeView() {
   const router = useRouter();
   const [channels, setChannels] = useState<Channel[] | null>(null);
   const [error, setError] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     fetch("/api/channels")
@@ -42,6 +44,8 @@ export function HomeView() {
   return (
     <main style={{ paddingTop: 16 }}>
       <h1 style={{ margin: "0 0 24px 16px" }}>Live TV</h1>
+      <button onClick={() => setShowSettings(true)} style={{ marginLeft: 16 }}>⚙ Settings</button>
+      {showSettings && <SettingsPanel onClose={() => { setShowSettings(false); router.refresh(); }} />}
       <CategoryRow title="Favorites" channels={favorites} onSelect={open} />
       <CategoryRow title="Continue Watching" channels={recents} onSelect={open} />
       {ORDER.map((cat) => (
