@@ -16,13 +16,30 @@ Source review: post-merge holistic review on 2026-06-17.
     generator you self-host. So [epg-source.ts](../src/lib/epg-source.ts)'s fetch
     always throws, [api/epg/route.ts](../src/app/api/epg/route.ts) always returns
     `{}`, and the player overlay never shows program info.
+  - **Sources investigated (2026-06-17):**
+    - `iptv-epg.org` — serves real XMLTV, free, no key, and uses the same
+      `tvg-id` channel-id convention we match on. **But** files are per-country
+      and huge (US alone = **504 MB**, ~1.08M programmes, served via a hashed
+      redirect URL). Fetching + regex-parsing on-demand would OOM/timeout a
+      Vercel serverless function (especially Hobby tier). The `.gz` transfers
+      smaller but still decompresses to 504 MB to parse. **Not viable for the
+      current fetch-whole-file-on-demand design.**
+    - `github.com/iptv-org/epg` — the official tool is a **generator you run**
+      (npm/Docker) against a channel list to produce a slim XMLTV for only your
+      channels. No giant static feed to fetch.
   - **Fix (pick one):**
-    - (a) Remove the EPG feature for v1 — delete `/api/epg`, `epg-source.ts`,
-      `epg.ts`, and the overlay's `epg.now` usage in
-      [WatchView.tsx](../src/components/WatchView.tsx). Honest and clean.
-    - (b) Switch to a working free EPG source (needs research — likely
-      self-hosting the iptv-org/epg generator and serving its output).
-  - **Decision needed:** remove vs. source a real EPG feed.
+    - (a) **Remove EPG for v1** — delete `/api/epg`, `epg-source.ts`, `epg.ts`,
+      and the `epg.now` usage in [WatchView.tsx](../src/components/WatchView.tsx).
+      Honest and clean; revisit later. (Also resolves #10.)
+    - (b) **Self-hosted slim EPG (proper fix, needs its own spec):** a scheduled
+      GitHub Action/cron runs the iptv-org/epg generator (or pre-filters an
+      iptv-epg.org country file) against our channel list, producing a small
+      XMLTV we host; `/api/epg` reads that slim file. Real mini-feature.
+    - (c) **Per-channel EPG API (research first):** if a service like `epg.pw`
+      returns a single channel's guide in a small response, that fits our
+      on-demand model with minimal change. Verify availability/format before
+      committing.
+  - **Decision needed:** (a) remove now, or schedule (b)/(c) as a follow-up spec.
 
 - [ ] **2. TV remote can't move between rows — vertical D-pad nav missing.**
   - Each [CategoryRow](../src/components/CategoryRow.tsx) handles only horizontal
@@ -93,6 +110,49 @@ Source review: post-merge holistic review on 2026-06-17.
     out of scope). Tied to issue #1's EPG decision.
   - **Fix:** remove the dead branch (and the `nowPlaying` field) unless EPG is
     revived and joined into the channel list.
+
+---
+
+## 🚀 Data-source upgrade (iptv-org/api) — investigated 2026-06-17
+
+The `iptv-org/api` repo serves structured JSON on a CDN (no key) that is richer
+than the raw M3U we currently parse. All of the below sit behind the existing
+`/api/channels` seam, so the frontend barely changes. Endpoints:
+`https://iptv-org.github.io/api/{channels,streams,guides,logos,categories,blocklist}.json`.
+
+- [ ] **21. Switch source from M3U parsing to `channels.json` + `streams.json`.**
+  - `channels.json` (39,922) gives clean name, country, **canonical categories**,
+    `is_nsfw`, website; `streams.json` (15,360) gives stream url, `quality`,
+    `user_agent`, `referrer`. Join by channel id in [source.ts](../src/lib/source.ts).
+  - **Benefit:** replaces keyword-guessing in [categories.ts](../src/lib/categories.ts)
+    with canonical category IDs; cleaner, more reliable data model.
+  - **Trade-off:** larger upstream files (≈10 MB + 3 MB) — parsed server-side and
+    cached, but makes slimming the client payload (#6) more important.
+
+- [ ] **22. Family-safety filter (high value — kids/family use).**
+  - Current M3U pipeline does **zero** adult filtering. The API flags **373
+    `is_nsfw` channels**, ships a **1,574-entry `blocklist.json`** (DMCA/NSFW),
+    and has an explicit `xxx` category.
+  - **Fix:** exclude `is_nsfw`, anything in `blocklist.json`, and the `xxx`
+    category from the channel list. Depends on #21 (or load these alongside the
+    M3U as a deny-list).
+
+- [ ] **23. Better logos via `logos.json`.**
+  - Dedicated, usually higher-quality artwork vs. M3U `tvg-logo`. Pairs with the
+    broken-logo fallback in #7.
+
+- [ ] **24. Send stream headers to reduce dead streams.**
+  - `streams.json` exposes `user_agent` / `referrer`; some streams only play with
+    these. Configure hls.js (`xhrSetup` / loader) in
+    [VideoPlayer.tsx](../src/components/VideoPlayer.tsx) to send them. Likely cuts
+    "Stream unavailable" cases. Depends on #21 for the header data.
+
+- [ ] **25. Quality metadata from `streams.json`.**
+  - Per-stream `quality` (e.g. "720p") lets us show/sort by quality without
+    waiting for the hls manifest; complements the existing QualitySelector.
+
+> Note: `guides.json` (channel → EPG site mapping) is the missing piece for the
+> proper slim-EPG build in option (b) of issue **#1**.
 
 ---
 
