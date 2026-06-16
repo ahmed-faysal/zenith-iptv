@@ -1,0 +1,12 @@
+{
+  "id": "com.personal.livetv",
+  "version": "1.0.0",
+  "vendor": "Personal",
+  "type": "web",
+  "main": "https://YOUR-PROJECT.vercel.app",
+  "title": "Live TV",
+  "icon": "icon.png",
+  "largeIcon": "largeIcon.png",
+  "bgColor": "#0b0b0b",
+  "disableBackHistoryAPI": false
+}
