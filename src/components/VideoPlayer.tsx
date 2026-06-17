@@ -1,31 +1,31 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
-import { QualitySelector, type Level } from "./QualitySelector";
+import type { Level } from "./QualitySelector";
 
 type Status = "loading" | "playing" | "error";
 
-export function VideoPlayer({ src, paused = false }: { src: string; paused?: boolean }) {
+// Playback surface only. Play/pause, volume, and quality are driven by props so
+// the PlayerOverlay (a single control surface) owns the UI; VideoPlayer just
+// reflects intent onto the <video>/hls instance and reports available levels up.
+export function VideoPlayer({
+  src, paused = false, volume = 1, muted = false, currentLevel = -1, onLevels,
+}: {
+  src: string;
+  paused?: boolean;
+  volume?: number;
+  muted?: boolean;
+  currentLevel?: number;
+  onLevels?: (levels: Level[]) => void;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [status, setStatus] = useState<Status>("loading");
-  const [levels, setLevels] = useState<Level[]>([]);
-  const [current, setCurrent] = useState(-1);
-
-  // Apply the user's play/pause intent. For a live stream, resuming lets hls.js
-  // catch back up toward the live edge.
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-    if (paused) video.pause();
-    else video.play().catch(() => {});
-  }, [paused]);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
     setStatus("loading");
-    setLevels([]);
 
     if (Hls.isSupported()) {
       const hls = new Hls();
@@ -33,7 +33,7 @@ export function VideoPlayer({ src, paused = false }: { src: string; paused?: boo
       hls.loadSource(src);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, (_e, data) => {
-        setLevels(data.levels.map((l) => ({ height: l.height })));
+        onLevels?.(data.levels.map((l) => ({ height: l.height })));
         video.play().then(() => setStatus("playing")).catch(() => {});
       });
       hls.on(Hls.Events.ERROR, (_e, data) => {
@@ -47,21 +47,34 @@ export function VideoPlayer({ src, paused = false }: { src: string; paused?: boo
     video.addEventListener("loadeddata", () => setStatus("playing"));
     video.addEventListener("error", () => setStatus("error"));
     video.play().catch(() => {});
-  }, [src]);
+  }, [src, onLevels]);
 
-  function selectLevel(i: number) {
-    setCurrent(i);
-    if (hlsRef.current) hlsRef.current.currentLevel = i;
-  }
+  // Reflect play/pause intent. Resuming a live stream lets hls.js catch back up.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (paused) video.pause();
+    else video.play().catch(() => {});
+  }, [paused]);
+
+  // Reflect volume / mute (mainly for the desktop browser; TVs use the remote).
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.volume = volume;
+    video.muted = muted;
+  }, [volume, muted]);
+
+  // Reflect the chosen quality level (-1 = Auto/ABR).
+  useEffect(() => {
+    if (hlsRef.current) hlsRef.current.currentLevel = currentLevel;
+  }, [currentLevel]);
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100%", background: "#000" }}>
+    <div style={{ position: "absolute", inset: 0, background: "#000" }}>
       <video ref={videoRef} style={{ width: "100%", height: "100%" }} controls={false} />
       {status === "loading" && <Centered>Loading…</Centered>}
       {status === "error" && <Centered>Stream unavailable — try another channel</Centered>}
-      <div style={{ position: "absolute", bottom: 16, right: 16 }}>
-        <QualitySelector levels={levels} current={current} onSelect={selectLevel} />
-      </div>
     </div>
   );
 }

@@ -93,6 +93,24 @@ Source review: post-merge holistic review on 2026-06-17.
 
 ## 🟡 Important — performance & reachability
 
+- [x] **34. Player UI redesign — glassy streaming-player overlay.** ✅ 2026-06-18
+  - Reworked the player chrome to match a modern streaming-player look (from a v0
+    mockup) while staying honest for live, no-DVR streams. New
+    [PlayerOverlay](../src/components/PlayerOverlay.tsx): a **top bar** (Back, LIVE
+    badge, channel name + category, `HD · <res>` quality pill, live
+    [Clock](../src/components/Clock.tsx)), a **center play/pause**, and a **bottom
+    row** (favorite, channels, volume slider + mute, fullscreen) plus a **● LIVE**
+    indicator. Each band is a `data-row` so `useGridFocus` walks between them.
+  - **Deliberately omitted** the mockup's scrubber / ±30s / skip (no live seek),
+    viewer count (no data), and cast (not implemented) — they'd be dead controls.
+  - **New dual-target controls:** volume slider + mute (real in browser; TVs use
+    the hardware remote) and fullscreen (real `requestFullscreen` in browser).
+  - HLS level state lifted from VideoPlayer into [WatchView](../src/components/WatchView.tsx)
+    so the quality pill + picker share one source of truth;
+    [VideoPlayer](../src/components/VideoPlayer.tsx) is now a pure playback surface
+    driven by `paused`/`volume`/`muted`/`currentLevel` props. The old `ControlBar`
+    is replaced. Covered by `player.test.ts` and `PlayerOverlay.test.tsx`.
+
 - [x] **33. Player media controls (play/pause + remote transport keys).** ✅ 2026-06-17
   - The player had no transport controls and ignored the remote's hardware media
     buttons entirely. **Done:** [ControlBar](../src/components/ControlBar.tsx) now
