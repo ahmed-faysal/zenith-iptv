@@ -4,22 +4,18 @@ import { useRouter } from "next/navigation";
 import type { Channel } from "@/lib/types";
 import { VideoPlayer } from "./VideoPlayer";
 import { ChannelSidebar } from "./ChannelSidebar";
+import { useChannels } from "@/hooks/useChannels";
 import { setLastChannel, pushRecent, toggleFavorite, isFavorite } from "@/lib/storage";
 
 export function WatchView({ channelId }: { channelId: string }) {
   const router = useRouter();
-  const [channels, setChannels] = useState<Channel[]>([]);
-  const [active, setActive] = useState<Channel | null>(null);
+  const { channels: loaded } = useChannels();
+  const channels = loaded ?? [];
+  // The route's channel by default; a sidebar pick swaps it in place.
+  const [override, setOverride] = useState<Channel | null>(null);
+  const active = override ?? channels.find((c) => c.id === channelId) ?? null;
   const [sidebar, setSidebar] = useState(false);
   const [fav, setFav] = useState(false);
-
-  useEffect(() => {
-    fetch("/api/channels").then((r) => r.json()).then((d) => {
-      const list: Channel[] = d.channels ?? [];
-      setChannels(list);
-      setActive(list.find((c) => c.id === channelId) ?? null);
-    });
-  }, [channelId]);
 
   useEffect(() => {
     if (!active) return;
@@ -61,7 +57,7 @@ export function WatchView({ channelId }: { channelId: string }) {
         </button>
         <strong>{active.name}</strong>
       </div>
-      <ChannelSidebar channels={channels} open={sidebar} onSelect={(c) => { setActive(c); setSidebar(false); }} />
+      <ChannelSidebar channels={channels} open={sidebar} onSelect={(c) => { setOverride(c); setSidebar(false); }} />
     </div>
   );
 }

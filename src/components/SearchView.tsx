@@ -1,22 +1,19 @@
 "use client";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Channel } from "@/lib/types";
 import { CategoryRow } from "./CategoryRow";
+import { useChannels } from "@/hooks/useChannels";
 import { setLastChannel, pushRecent } from "@/lib/storage";
 
 export function SearchView() {
   const router = useRouter();
-  const [channels, setChannels] = useState<Channel[]>([]);
+  const { channels } = useChannels();
   const [q, setQ] = useState("");
-
-  useEffect(() => {
-    fetch("/api/channels").then((r) => r.json()).then((d) => setChannels(d.channels ?? []));
-  }, []);
 
   const results = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    if (!needle) return [];
+    if (!needle || !channels) return [];
     return channels.filter((c) => c.name.toLowerCase().includes(needle)).slice(0, 60);
   }, [q, channels]);
 

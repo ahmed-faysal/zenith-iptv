@@ -23,4 +23,14 @@ describe("CategoryRow", () => {
     await userEvent.keyboard("{ArrowRight}");
     expect(buttons[1]).toHaveFocus();
   });
+  it("caps rendered cards at the given limit", () => {
+    const many = Array.from({ length: 100 }, (_, i) => make("c" + i, "Ch " + i));
+    render(<CategoryRow title="Other" channels={many} limit={40} onSelect={() => {}} />);
+    expect(screen.getAllByRole("button")).toHaveLength(40);
+  });
+  it("renders all cards when no limit is given", () => {
+    const many = Array.from({ length: 50 }, (_, i) => make("c" + i, "Ch " + i));
+    render(<CategoryRow title="Other" channels={many} onSelect={() => {}} />);
+    expect(screen.getAllByRole("button")).toHaveLength(50);
+  });
 });

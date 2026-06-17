@@ -1,27 +1,22 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Channel, AppCategory } from "@/lib/types";
 import { CategoryRow } from "./CategoryRow";
 import { SettingsPanel } from "./SettingsPanel";
+import { TopBar } from "./TopBar";
 import { useGridFocus } from "@/hooks/useGridFocus";
+import { useChannels } from "@/hooks/useChannels";
 import { getFavorites, getRecents, getPrefs, setLastChannel, pushRecent } from "@/lib/storage";
 
 const ORDER: AppCategory[] = ["News", "Sports", "Entertainment", "Music", "Kids", "Other"];
+const ROW_LIMIT = 40; // cap huge category rows; the long tail lives in Search (#4)
 
 export function HomeView() {
   const router = useRouter();
-  const [channels, setChannels] = useState<Channel[] | null>(null);
-  const [error, setError] = useState(false);
+  const { channels, error } = useChannels();
   const [showSettings, setShowSettings] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
-
-  useEffect(() => {
-    fetch("/api/channels")
-      .then((r) => r.json())
-      .then((d) => setChannels(d.channels ?? []))
-      .catch(() => setError(true));
-  }, []);
 
   // Cross-row D-pad navigation + initial focus once channels are on screen.
   useGridFocus(mainRef, !!channels && !error && !showSettings);
@@ -48,8 +43,11 @@ export function HomeView() {
 
   return (
     <main ref={mainRef} style={{ paddingTop: 16 }}>
-      <h1 style={{ margin: "0 0 24px 16px" }}>Live TV</h1>
-      <button onClick={() => setShowSettings(true)} style={{ marginLeft: 16 }}>⚙ Settings</button>
+      <h1 style={{ margin: "0 0 16px 16px" }}>Live TV</h1>
+      <TopBar
+        onSearch={() => router.push("/search")}
+        onSettings={() => setShowSettings(true)}
+      />
       {showSettings && <SettingsPanel onClose={() => { setShowSettings(false); router.refresh(); }} />}
       <CategoryRow title="Favorites" channels={favorites} onSelect={open} />
       <CategoryRow title="Continue Watching" channels={recents} onSelect={open} />
@@ -58,6 +56,7 @@ export function HomeView() {
           key={cat}
           title={cat}
           channels={filtered.filter((c) => c.category === cat)}
+          limit={ROW_LIMIT}
           onSelect={open}
         />
       ))}

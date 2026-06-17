@@ -38,25 +38,27 @@ Source review: post-merge holistic review on 2026-06-17.
 
 ## 🟡 Important — performance & reachability
 
-- [ ] **4. Renders all ~11,000 channels as DOM nodes.**
-  - "Other" is ~5,784 cards, Entertainment ~3,521; [HomeView.tsx:55](../src/components/HomeView.tsx#L55)
-    maps the full filtered list per row. Brutal on a TV browser (slow paint,
-    janky scroll).
-  - **Fix:** cap each row (e.g. first 30–40 cards) and rely on Search for the
-    long tail; or virtualize the rows.
+- [x] **4. Cap big category rows.** ✅ 2026-06-17
+  - [CategoryRow](../src/components/CategoryRow.tsx) takes an optional `limit`;
+    [HomeView](../src/components/HomeView.tsx) caps each category row at 40 cards
+    (`ROW_LIMIT`) so the ~5.8k "Other" / ~3.5k Entertainment lists no longer paint
+    thousands of DOM nodes. Favorites/Continue Watching stay uncapped (small); the
+    long tail lives in Search. Covered by `__tests__/CategoryRow.test.tsx`.
+    (Virtualization remains an option if 40 ever feels limiting.)
 
-- [ ] **5. Search is unreachable from the UI.**
-  - `/search` exists but Home has no link/button to it (the spec's "search icon
-    in the top bar" was never wired). Only reachable by typing the URL.
-  - **Fix:** add a search affordance (focusable button/icon) to Home that routes
-    to `/search`.
+- [x] **5. Search reachable from the UI.** ✅ 2026-06-17
+  - New [TopBar](../src/components/TopBar.tsx) with focusable **Search** + Settings
+    buttons, rendered as a `data-row` so the remote reaches it via the grid nav.
+    Search routes to `/search`. Bonus: Settings is now remote-reachable too (it
+    was previously a non-focusable button). Covered by `__tests__/TopBar.test.tsx`.
 
-- [ ] **6. 2.67 MB channel payload re-downloaded on every navigation.**
-  - Home, Player, and Search each independently `fetch("/api/channels")` and pull
-    the full list. Server cache spares the origin, but the client redownloads
-    2.67 MB each time.
-  - **Fix:** share one client-side cache (React context, or SWR/React Query) so
-    the list is fetched once per session.
+- [x] **6. Channel payload fetched once per session.** ✅ 2026-06-17
+  - New [channels-client.ts](../src/lib/channels-client.ts) holds a session-wide
+    promise cache (`loadChannels`, mirroring the server `source.ts` DI/reset
+    pattern); a rejected fetch is dropped so a transient failure can retry. The
+    thin [useChannels](../src/hooks/useChannels.ts) hook exposes it, and Home,
+    Watch, and Search now all read through it instead of each `fetch`-ing the full
+    2.67 MB list. Cache behavior covered by `__tests__/channels-client.test.ts`.
 
 ---
 
@@ -74,9 +76,10 @@ Source review: post-merge holistic review on 2026-06-17.
   - **Fix:** replace free-text inputs with pick-lists derived from the loaded
     channels' languages/countries.
 
-- [ ] **9. `__resetCache` exported in production.**
-  - [source.ts:10](../src/lib/source.ts#L10) — test-only helper exported from the
-    app module. Harmless; tidy if convenient.
+- [ ] **9. Test-only cache-reset helpers exported in production.**
+  - [source.ts](../src/lib/source.ts) (`__resetCache`) and now
+    [channels-client.ts](../src/lib/channels-client.ts) (`__resetChannelsCache`)
+    both export a test-only reset from an app module. Harmless; tidy if convenient.
 
 - [x] **10. "Now playing" dead branch removed.** ✅ 2026-06-17
   - Removed the unused `channel.nowPlaying` render in
