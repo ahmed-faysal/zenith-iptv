@@ -12,10 +12,11 @@ driven entirely by a TV remote's D-pad — no mouse or keyboard required.
 
 - **Home** — Favorites, Continue Watching, and per-category rows (News, Sports,
   Entertainment, Music, Kids, Other), navigable as a grid with the D-pad.
-- **Player** — full-screen HLS playback with a glassy overlay: a top metadata
-  bar (Back, LIVE badge, channel name, quality pill, clock), a center play/pause,
-  and a bottom control row (favorite, channels, volume/mute, fullscreen, quality).
-  No scrubber — the streams are live.
+- **Player** — full-screen HLS playback with a glassy overlay that auto-hides
+  when idle: a top metadata bar (Back, LIVE badge, channel name, quality button,
+  clock), a center play/pause, and a bottom control row (favorite, channels,
+  volume/mute, fullscreen). Quality opens from a single button. No scrubber — the
+  streams are live.
 - **Search** — live name search over the full catalogue, fully remote-navigable.
 - **Settings** — filter the catalogue by language/country using checkbox
   pick-lists (no typing needed on a remote).

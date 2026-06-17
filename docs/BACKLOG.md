@@ -93,6 +93,21 @@ Source review: post-merge holistic review on 2026-06-17.
 
 ## 🟡 Important — performance & reachability
 
+- [x] **35. Player overlay polish — auto-hide, collapse quality, de-dupe.** ✅ 2026-06-18
+  - Feedback from a real screenshot: the overlay never hid, and **quality + LIVE
+    were each shown twice** (a top quality pill *and* an always-on `Auto 288p…`
+    row; a top LIVE badge *and* a bottom one).
+  - **Done:** the overlay now **auto-hides after ~3.5s idle** with a graceful
+    fade ([WatchView](../src/components/WatchView.tsx)) — stays shown while paused
+    or while the sidebar is open; any activity reveals it, and the first key while
+    hidden is swallowed (reveals without triggering a control). D-pad grid nav is
+    suspended while hidden. **Quality** collapsed into one button that opens an
+    options popover ([PlayerOverlay](../src/components/PlayerOverlay.tsx)); the
+    always-visible row and the duplicate **LIVE** indicator are gone. Covered by
+    updated `PlayerOverlay.test.tsx`.
+  - Note: the large on-screen text some channels show (e.g. a programme title) is
+    the **broadcaster's own graphics/captions in the video**, not our overlay.
+
 - [x] **34. Player UI redesign — glassy streaming-player overlay.** ✅ 2026-06-18
   - Reworked the player chrome to match a modern streaming-player look (from a v0
     mockup) while staying honest for live, no-DVR streams. New

@@ -25,14 +25,53 @@ export function WatchView({ channelId }: { channelId: string }) {
   const [muted, setMuted] = useState(false);
   const [levels, setLevels] = useState<Level[]>([]);
   const [currentLevel, setCurrentLevel] = useState(-1);
+  // Idle-driven visibility; the overlay is always shown while paused or while the
+  // sidebar is open, so we derive the effective value rather than force it via an
+  // effect (keeps the auto-hide as the only thing toggling `chromeVisible`).
+  const [chromeVisible, setChromeVisible] = useState(true);
+  const showChrome = chromeVisible || paused || sidebar;
   // `fav` is derived from storage each render; bumping forces a re-read.
   const [, bumpFav] = useState(0);
   const fav = active ? isFavorite(active.id) : false;
   const containerRef = useRef<HTMLDivElement>(null);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Refs mirror current state so the (mount-once) activity handlers read fresh
+  // values without re-subscribing. Synced in an effect (not during render).
+  const keepShownRef = useRef(false);
+  const visibleRef = useRef(true);
+  useEffect(() => {
+    keepShownRef.current = paused || sidebar;
+    visibleRef.current = showChrome;
+  });
 
-  // Cross-row D-pad nav (top bar ↕ center ↕ bottom ↕ quality) + initial focus,
-  // suspended while the sidebar owns focus.
-  useGridFocus(containerRef, !!active, !sidebar);
+  useEffect(() => {
+    function armHide() {
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+      if (keepShownRef.current) return; // don't hide while paused / sidebar open
+      hideTimer.current = setTimeout(() => setChromeVisible(false), 3500);
+    }
+    function onActivity() { setChromeVisible(true); armHide(); }
+    // Capture phase: when hidden, the first key just reveals the overlay and is
+    // swallowed so it doesn't also trigger a control underneath.
+    function onKeyCapture(e: KeyboardEvent) {
+      if (!visibleRef.current) { e.stopPropagation(); e.preventDefault(); setChromeVisible(true); }
+      armHide();
+    }
+    window.addEventListener("mousemove", onActivity);
+    window.addEventListener("click", onActivity);
+    window.addEventListener("keydown", onKeyCapture, true);
+    armHide();
+    return () => {
+      window.removeEventListener("mousemove", onActivity);
+      window.removeEventListener("click", onActivity);
+      window.removeEventListener("keydown", onKeyCapture, true);
+      if (hideTimer.current) clearTimeout(hideTimer.current);
+    };
+  }, []);
+
+  // Cross-row D-pad nav (top bar ↕ center ↕ bottom) + initial focus, suspended
+  // while the sidebar owns focus or the chrome is hidden.
+  useGridFocus(containerRef, !!active, !sidebar && showChrome);
 
   useEffect(() => {
     if (!active) return;
@@ -100,6 +139,7 @@ export function WatchView({ channelId }: { channelId: string }) {
         muted={muted}
         levels={levels}
         currentLevel={currentLevel}
+        visible={showChrome}
         onTogglePlay={() => setPaused((p) => !p)}
         onToggleFavorite={toggleFav}
         onOpenChannels={() => setSidebar(true)}

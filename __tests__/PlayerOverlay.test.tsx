@@ -78,20 +78,32 @@ describe("PlayerOverlay", () => {
     expect(onVolumeChange).toHaveBeenCalledWith(0.5);
   });
 
-  it("shows the current quality on the pill", () => {
-    render(<PlayerOverlay {...base} levels={[{ height: 1080 }, { height: 720 }]} currentLevel={0} />);
-    expect(screen.getByText("HD · 1080p")).toBeInTheDocument();
+  it("hides the quality control when there is only one rendition", () => {
+    render(<PlayerOverlay {...base} levels={[{ height: 720 }]} currentLevel={-1} />);
+    expect(screen.queryByRole("button", { name: /quality/i })).toBeNull();
   });
 
-  it("offers quality choices only when multiple levels exist", async () => {
-    const onSelectLevel = vi.fn();
-    const { rerender } = render(<PlayerOverlay {...base} />);
+  it("collapses quality into one button showing the current rendition", () => {
+    render(<PlayerOverlay {...base} levels={[{ height: 1080 }, { height: 720 }]} currentLevel={0} />);
+    const q = screen.getByRole("button", { name: /quality/i });
+    expect(q).toHaveTextContent("1080p");
+    // options are hidden until the button is opened
     expect(screen.queryByRole("button", { name: "720p" })).toBeNull();
-    rerender(
+  });
+
+  it("opens the options on click and reports the chosen level", async () => {
+    const onSelectLevel = vi.fn();
+    render(
       <PlayerOverlay {...base} levels={[{ height: 1080 }, { height: 720 }]} currentLevel={-1}
         onSelectLevel={onSelectLevel} />
     );
+    await userEvent.click(screen.getByRole("button", { name: /quality/i }));
     await userEvent.click(screen.getByRole("button", { name: "720p" }));
     expect(onSelectLevel).toHaveBeenCalledWith(1);
+  });
+
+  it("is hidden from assistive tech and pointer when not visible", () => {
+    const { container } = render(<PlayerOverlay {...base} visible={false} />);
+    expect(container.firstChild).toHaveAttribute("aria-hidden", "true");
   });
 });
