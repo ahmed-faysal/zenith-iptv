@@ -46,16 +46,21 @@ Source review: post-merge holistic review on 2026-06-17.
     long tail lives in Search. Covered by `__tests__/CategoryRow.test.tsx`.
     (Virtualization remains an option if 40 ever feels limiting.)
 
-- [x] **5. Search reachable from the UI.** ✅ 2026-06-17
+- [x] **5. Search reachable — and fully remote-navigable.** ✅ 2026-06-17
   - New [TopBar](../src/components/TopBar.tsx) with focusable **Search** + Settings
     buttons, rendered as a `data-row` so the remote reaches it via the grid nav.
     Search routes to `/search`. Bonus: Settings is now remote-reachable too (it
     was previously a non-focusable button). Covered by `__tests__/TopBar.test.tsx`.
+  - Review follow-up (2026-06-17): the search page itself is now remote-complete —
+    [SearchView](../src/components/SearchView.tsx) bridges input↕results (ArrowDown
+    into results, ArrowUp back to the box) and Back/Escape returns Home (Backspace
+    still edits the query while typing). Closes the dead-end the TopBar link
+    exposed.
 
 - [x] **6. Channel payload fetched once per session.** ✅ 2026-06-17
   - New [channels-client.ts](../src/lib/channels-client.ts) holds a session-wide
-    promise cache (`loadChannels`, mirroring the server `source.ts` DI/reset
-    pattern); a rejected fetch is dropped so a transient failure can retry. The
+    promise cache (`loadChannels`); a rejected fetch is dropped so a transient
+    failure can retry. The
     thin [useChannels](../src/hooks/useChannels.ts) hook exposes it, and Home,
     Watch, and Search now all read through it instead of each `fetch`-ing the full
     2.67 MB list. Cache behavior covered by `__tests__/channels-client.test.ts`.
@@ -64,22 +69,30 @@ Source review: post-merge holistic review on 2026-06-17.
 
 ## 🟢 Minor — polish
 
-- [ ] **7. Broken logos show a broken-image glyph.**
-  - [ChannelCard.tsx](../src/components/ChannelCard.tsx) uses the placeholder only
-    when `logo` is empty, not when the image 404s (many iptv-org logos are dead).
-  - **Fix:** add an `onError` handler that swaps in the placeholder `<div>`.
+- [x] **7. Broken logos fall back to the placeholder.** ✅ 2026-06-17
+  - [ChannelCard.tsx](../src/components/ChannelCard.tsx) now tracks a `broken`
+    state and renders the placeholder `<div>` when `logo` is empty **or** the
+    `<img>` fires `onError` (many iptv-org logos are dead). Covered by
+    `__tests__/ChannelCard.test.tsx`.
 
-- [ ] **8. Settings filter needs exact typed strings.**
-  - Language/country filter expects literal "English" / "GB"
-    ([SettingsPanel.tsx](../src/components/SettingsPanel.tsx)) — painful with no
-    keyboard on a TV.
-  - **Fix:** replace free-text inputs with pick-lists derived from the loaded
-    channels' languages/countries.
+- [x] **8. Settings uses pick-lists, not typed strings.** ✅ 2026-06-17
+  - [SettingsPanel.tsx](../src/components/SettingsPanel.tsx) now renders focusable
+    checkbox pick-lists for languages/countries, pre-checked from saved prefs — no
+    typing needed on a remote. The panel has vertical `useFocusNav` and focuses its
+    first control on open. Covered by `__tests__/SettingsPanel.test.tsx`.
+  - Review follow-ups (2026-06-17): (a) the lists are the **most-common 24** values
+    by channel count (frequency-sorted via [topValues](../src/lib/filters.ts),
+    `__tests__/filters.test.ts`) so they stay short enough to reach **Save** with a
+    remote; (b) checkboxes now toggle on **Enter** as well as Space, since a TV
+    remote's OK button sends Enter — without this, filters couldn't be changed by
+    remote at all.
 
-- [ ] **9. Test-only cache-reset helpers exported in production.**
-  - [source.ts](../src/lib/source.ts) (`__resetCache`) and now
-    [channels-client.ts](../src/lib/channels-client.ts) (`__resetChannelsCache`)
-    both export a test-only reset from an app module. Harmless; tidy if convenient.
+- [x] **9. Test-only cache-reset exports removed (factory pattern).** ✅ 2026-06-17
+  - [source.ts](../src/lib/source.ts) and [channels-client.ts](../src/lib/channels-client.ts)
+    now expose `createChannelSource` / `createChannelLoader` factories (each owns a
+    private cache) plus a production singleton (`getChannels` / `loadChannels`).
+    Tests construct an isolated instance per case, so the `__resetCache` /
+    `__resetChannelsCache` hooks are gone from the app modules.
 
 - [x] **10. "Now playing" dead branch removed.** ✅ 2026-06-17
   - Removed the unused `channel.nowPlaying` render in

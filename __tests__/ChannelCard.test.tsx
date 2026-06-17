@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ChannelCard } from "@/components/ChannelCard";
 import type { Channel } from "@/lib/types";
@@ -27,5 +27,14 @@ describe("ChannelCard", () => {
     render(<ChannelCard channel={ch} onSelect={() => {}} />);
     expect(screen.getByRole("button", { name: /Channel A/ }))
       .toHaveAttribute("data-focusable");
+  });
+  it("drops to the placeholder when the logo image fails to load", () => {
+    const { container } = render(<ChannelCard channel={ch} onSelect={() => {}} />);
+    const img = container.querySelector("img");
+    expect(img).not.toBeNull();
+    fireEvent.error(img!);
+    expect(container.querySelector("img")).toBeNull();
+    // card still renders its name
+    expect(screen.getByText("Channel A")).toBeInTheDocument();
   });
 });

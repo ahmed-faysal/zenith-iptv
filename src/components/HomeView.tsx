@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Channel, AppCategory } from "@/lib/types";
 import { CategoryRow } from "./CategoryRow";
@@ -7,10 +7,12 @@ import { SettingsPanel } from "./SettingsPanel";
 import { TopBar } from "./TopBar";
 import { useGridFocus } from "@/hooks/useGridFocus";
 import { useChannels } from "@/hooks/useChannels";
+import { topValues } from "@/lib/filters";
 import { getFavorites, getRecents, getPrefs, setLastChannel, pushRecent } from "@/lib/storage";
 
 const ORDER: AppCategory[] = ["News", "Sports", "Entertainment", "Music", "Kids", "Other"];
 const ROW_LIMIT = 40; // cap huge category rows; the long tail lives in Search (#4)
+const FILTER_OPTIONS = 24; // most-common languages/countries offered in Settings
 
 export function HomeView() {
   const router = useRouter();
@@ -20,6 +22,17 @@ export function HomeView() {
 
   // Cross-row D-pad navigation + initial focus once channels are on screen.
   useGridFocus(mainRef, !!channels && !error && !showSettings);
+
+  // Most-common languages/countries in the catalogue — drives the settings
+  // pick-lists, capped so they stay navigable with a remote.
+  const allLanguages = useMemo(
+    () => topValues(channels ?? [], (c) => c.languages, FILTER_OPTIONS),
+    [channels]
+  );
+  const allCountries = useMemo(
+    () => topValues(channels ?? [], (c) => c.countries, FILTER_OPTIONS),
+    [channels]
+  );
 
   if (error) return <p style={{ padding: 24 }}>Could not load channels. Please retry later.</p>;
   if (!channels) return <p style={{ padding: 24 }}>Loading channels…</p>;
@@ -48,7 +61,13 @@ export function HomeView() {
         onSearch={() => router.push("/search")}
         onSettings={() => setShowSettings(true)}
       />
-      {showSettings && <SettingsPanel onClose={() => { setShowSettings(false); router.refresh(); }} />}
+      {showSettings && (
+        <SettingsPanel
+          languages={allLanguages}
+          countries={allCountries}
+          onClose={() => { setShowSettings(false); router.refresh(); }}
+        />
+      )}
       <CategoryRow title="Favorites" channels={favorites} onSelect={open} />
       <CategoryRow title="Continue Watching" channels={recents} onSelect={open} />
       {ORDER.map((cat) => (

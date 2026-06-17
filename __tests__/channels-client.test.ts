@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { loadChannels, __resetChannelsCache } from "@/lib/channels-client";
+import { describe, it, expect, vi } from "vitest";
+import { createChannelLoader } from "@/lib/channels-client";
 import type { Channel } from "@/lib/types";
 
 const ch: Channel = {
@@ -7,20 +7,19 @@ const ch: Channel = {
   category: "News", languages: [], countries: [],
 };
 
-beforeEach(() => __resetChannelsCache());
-
-describe("loadChannels", () => {
+describe("createChannelLoader", () => {
   it("fetches channels on the first call", async () => {
     const fetcher = vi.fn().mockResolvedValue([ch]);
-    const result = await loadChannels(fetcher);
-    expect(result).toEqual([ch]);
+    const load = createChannelLoader(fetcher);
+    expect(await load()).toEqual([ch]);
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
 
   it("serves from cache on subsequent calls (fetch once per session)", async () => {
     const fetcher = vi.fn().mockResolvedValue([ch]);
-    await loadChannels(fetcher);
-    await loadChannels(fetcher);
+    const load = createChannelLoader(fetcher);
+    await load();
+    await load();
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
 
@@ -29,9 +28,9 @@ describe("loadChannels", () => {
       .fn()
       .mockRejectedValueOnce(new Error("network"))
       .mockResolvedValueOnce([ch]);
-    await expect(loadChannels(fetcher)).rejects.toThrow("network");
-    const result = await loadChannels(fetcher);
-    expect(result).toEqual([ch]);
+    const load = createChannelLoader(fetcher);
+    await expect(load()).rejects.toThrow("network");
+    expect(await load()).toEqual([ch]);
     expect(fetcher).toHaveBeenCalledTimes(2);
   });
 });

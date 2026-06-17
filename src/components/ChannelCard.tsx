@@ -1,9 +1,11 @@
 "use client";
+import { useState } from "react";
 import type { Channel } from "@/lib/types";
 
 export function ChannelCard({
   channel, onSelect,
 }: { channel: Channel; onSelect: (c: Channel) => void }) {
+  const [broken, setBroken] = useState(false);
   return (
     <button
       data-focusable
@@ -17,8 +19,8 @@ export function ChannelCard({
       onFocus={(e) => (e.currentTarget.style.borderColor = "#4da3ff")}
       onBlur={(e) => (e.currentTarget.style.borderColor = "transparent")}
     >
-      {channel.logo
-        ? <img src={channel.logo} alt="" width={96} height={54} style={{ objectFit: "contain" }} />
+      {channel.logo && !broken
+        ? <img src={channel.logo} alt="" width={96} height={54} style={{ objectFit: "contain" }} onError={() => setBroken(true)} />
         : <div style={{ width: 96, height: 54, background: "#333", borderRadius: 6 }} />}
       <span style={{ marginTop: 8, fontWeight: 600, textAlign: "center" }}>{channel.name}</span>
     </button>
