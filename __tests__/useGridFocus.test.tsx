@@ -6,9 +6,9 @@ import { useGridFocus } from "@/hooks/useGridFocus";
 
 // Harness: a container with two "rows" of focusable buttons (a 3-wide row
 // above a 2-wide row), driven by the hook under test.
-function Grid({ ready = true }: { ready?: boolean }) {
+function Grid({ ready = true, navEnabled }: { ready?: boolean; navEnabled?: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
-  useGridFocus(ref, ready);
+  useGridFocus(ref, ready, navEnabled);
   return (
     <div ref={ref}>
       <div data-row>
@@ -68,5 +68,19 @@ describe("useGridFocus", () => {
     screen.getByText("r1c0").focus();
     await userEvent.keyboard("{ArrowDown}");
     expect(screen.getByText("r1c0")).toHaveFocus();
+  });
+
+  it("does not move focus when navigation is disabled (e.g. a modal is open)", async () => {
+    render(<Grid ready navEnabled={false} />);
+    screen.getByText("r0c1").focus();
+    await userEvent.keyboard("{ArrowDown}");
+    expect(screen.getByText("r0c1")).toHaveFocus(); // unchanged
+  });
+
+  it("still grabs initial focus even when navigation is disabled", () => {
+    // Initial focus depends on content being ready, not on nav being enabled —
+    // so closing a modal (nav re-enabled) doesn't yank focus back to the grid.
+    render(<Grid ready navEnabled={false} />);
+    expect(screen.getByText("r0c0")).toHaveFocus();
   });
 });

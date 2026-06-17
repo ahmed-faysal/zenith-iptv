@@ -10,7 +10,14 @@ function grid(container: HTMLElement): HTMLElement[][] {
   );
 }
 
-export function useGridFocus(ref: RefObject<HTMLElement | null>, ready: boolean) {
+// `ready` gates the initial focus (content is on screen); `navEnabled` gates the
+// arrow-key navigation separately, so a modal can suspend grid nav without the
+// initial-focus effect re-firing and yanking focus back when the modal closes.
+export function useGridFocus(
+  ref: RefObject<HTMLElement | null>,
+  ready: boolean,
+  navEnabled: boolean = ready
+) {
   // Initial focus: land on the first card as soon as content is present, so a
   // remote-only TV has somewhere to start.
   useEffect(() => {
@@ -20,7 +27,7 @@ export function useGridFocus(ref: RefObject<HTMLElement | null>, ready: boolean)
 
   // Vertical row-to-row navigation, preserving the column index.
   useEffect(() => {
-    if (!ready) return;
+    if (!navEnabled) return;
     const el = ref.current;
     if (!el) return;
 
@@ -46,5 +53,5 @@ export function useGridFocus(ref: RefObject<HTMLElement | null>, ready: boolean)
 
     el.addEventListener("keydown", onKey);
     return () => el.removeEventListener("keydown", onKey);
-  }, [ref, ready]);
+  }, [ref, navEnabled]);
 }

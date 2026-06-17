@@ -20,8 +20,10 @@ export function HomeView() {
   const [showSettings, setShowSettings] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
 
-  // Cross-row D-pad navigation + initial focus once channels are on screen.
-  useGridFocus(mainRef, !!channels && !error && !showSettings);
+  // Initial focus once channels are on screen; cross-row nav is suspended while
+  // the Settings modal is open (so it owns focus and the close doesn't re-grab).
+  const ready = !!channels && !error;
+  useGridFocus(mainRef, ready, ready && !showSettings);
 
   // Most-common languages/countries in the catalogue — drives the settings
   // pick-lists, capped so they stay navigable with a remote.

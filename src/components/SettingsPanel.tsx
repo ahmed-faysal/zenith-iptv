@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { getPrefs, setPrefs } from "@/lib/storage";
 import { useFocusNav } from "@/hooks/useFocusNav";
+import { isBackKey } from "@/lib/keys";
 
 // Pick-lists derived from the loaded channels — no typing required on a TV
 // remote. Languages/countries are the distinct values present in the catalogue.
@@ -13,9 +14,22 @@ export function SettingsPanel({
   const ref = useRef<HTMLDivElement>(null);
   useFocusNav(ref, { orientation: "vertical" });
 
+  // Grab focus on open and hand it back to the opener (the TopBar Settings
+  // button) when the panel unmounts, so the remote isn't stranded.
   useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null;
     ref.current?.querySelector<HTMLElement>("[data-focusable]")?.focus();
+    return () => opener?.focus();
   }, []);
+
+  // Back/Escape (incl. the webOS Back keyCode 461) closes the panel.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (isBackKey(e)) { e.preventDefault(); onClose(); }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   function toggle(set: Set<string>, value: string): Set<string> {
     const next = new Set(set);

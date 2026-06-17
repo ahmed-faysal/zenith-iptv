@@ -46,10 +46,12 @@ moment to populate.
 | --- | --- |
 | Arrow keys | Move focus (D-pad) — within a row and between rows |
 | Enter | OK / select the focused item |
-| Backspace / Escape | Back (returns Home from Player and Search) |
-| `F` | Toggle favorite (in the Player) |
-| ← / → (Player) | Open / close the channel sidebar |
+| Backspace / Escape / Back | Back — closes the open panel, else returns Home (the LG remote's Back button, keyCode 461, is handled too) |
 | ↓ / ↑ (Search) | Move between the search box and the results |
+
+In the **Player**, an on-screen control strip (Favorite ★, ☰ Channels, and the
+quality picker when a stream offers multiple renditions) is fully D-pad
+navigable — no mouse, pointer, or physical letter keys required.
 
 ## Scripts
 

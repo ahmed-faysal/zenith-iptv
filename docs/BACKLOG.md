@@ -23,6 +23,48 @@ Source review: post-merge holistic review on 2026-06-17.
 
 ## 🔴 Critical — broken features (fix first)
 
+- [x] **27. Back button does nothing on LG webOS (keyCode 461 not handled).** ✅ 2026-06-17
+  - webOS fires the Magic Remote Back button as `keyCode 461` (`0x1CD`), not
+    `"Escape"`. The old Back handlers only checked `"Escape"`/`"Backspace"`.
+  - **Done:** new shared [keys.ts](../src/lib/keys.ts) `isBackKey(e)` matches
+    `Escape`, `GoBack`, and `keyCode 461`; wired into
+    [SearchView](../src/components/SearchView.tsx), [WatchView](../src/components/WatchView.tsx),
+    [SettingsPanel](../src/components/SettingsPanel.tsx), and
+    [ChannelSidebar](../src/components/ChannelSidebar.tsx). Covered by
+    `__tests__/keys.test.ts`.
+
+- [x] **28. Player controls now D-pad reachable; favorite no longer needs an
+  `F` key.** ✅ 2026-06-17
+  - **Done:** new [ControlBar](../src/components/ControlBar.tsx) — a `data-row`
+    with focusable **★ Favorite** and **☰ Channels** buttons (activate on OK/Enter)
+    — overlays the Player. [WatchView](../src/components/WatchView.tsx) now runs
+    `useGridFocus`, so the control strip gets initial focus and ArrowDown reaches
+    the quality picker. The `F`-key and the global ArrowLeft/Right sidebar toggle
+    are gone; the sidebar opens via the Channels button. Favorite is derived from
+    storage (no setState-in-effect). Covered by `__tests__/ControlBar.test.tsx`.
+  - Bonus fix: OK/Enter on action buttons fired both `onKeyDown` and the native
+    click (favorite would toggle twice) — handlers now `preventDefault()` the
+    duplicate click across ChannelCard/ControlBar/ChannelSidebar.
+
+- [ ] **28. Player controls unreachable by D-pad — favorite needs a non-existent
+  `F` key.** The app's stated promise is "driven entirely by a TV remote's D-pad"
+  (README), but on the Player screen:
+  - The **favorite** toggle ([WatchView.tsx:50](../src/components/WatchView.tsx))
+    is only triggered by `onClick` or pressing **`F`** — there is no `F` key on a
+    TV remote. The star button is not `data-focusable` and [WatchView](../src/components/WatchView.tsx)
+    has no `useGridFocus`/`useFocusNav`, so the D-pad can never land on it.
+  - The **QualitySelector** ([VideoPlayer.tsx:53](../src/components/VideoPlayer.tsx))
+    is likewise unreachable: WatchView's window listener makes **ArrowLeft/Right
+    always drive the sidebar**, so even a focused quality button can't be moved
+    between. Both controls only work in Magic Remote **pointer mode**.
+  - **Fix:** give the Player real D-pad focus management (e.g. an overlay control
+    strip with `data-focusable` favorite + quality buttons, navigated with
+    `useFocusNav`), and bind favorite to **OK/Enter on a focusable button**, not
+    the `F` key. Remove the `F`-key control from the README once done (or keep it
+    only as a desktop convenience).
+
+
+
 - [x] **1. EPG "now playing" removed for v1 (data source 404'd).** ✅ 2026-06-17
   - The old EPG URL `https://iptv-org.github.io/epg/guides/full.xml` returns **404**
     (iptv-org no longer hosts a single pre-generated guide), so the feature only
@@ -50,6 +92,23 @@ Source review: post-merge holistic review on 2026-06-17.
 ---
 
 ## 🟡 Important — performance & reachability
+
+- [x] **29. Modals close on Back/Escape and restore focus.** ✅ 2026-06-17
+  - **Done:** [SettingsPanel](../src/components/SettingsPanel.tsx) now closes on
+    Back (window `isBackKey` listener) and restores focus to its opener on
+    unmount. [ChannelSidebar](../src/components/ChannelSidebar.tsx) closes on Back
+    (with `stopPropagation` so it doesn't also fire the Player's Home navigation)
+    and captures/restores opener focus on open/close. The Player's Back also
+    closes the sidebar first, then returns Home. Covered by updated
+    `SettingsPanel.test.tsx` and `ChannelSidebar.test.tsx`.
+
+- [x] **30. Focus is now unmistakable on native form controls.** ✅ 2026-06-17
+  - **Done:** added a global rule in [globals.css](../src/app/globals.css) —
+    `[data-focusable]:focus` / `:focus-visible` paint a high-contrast 3px white
+    outline (and a softer outline on `:hover` for Magic Remote pointer mode).
+    Checkboxes are enlarged to 22px with `accent-color`, so the focused checkbox
+    row, Save/Cancel buttons, and quality options are legible from a sofa.
+    `-webkit-` prefix kept for older webOS Chromium.
 
 - [x] **4. Cap big category rows.** ✅ 2026-06-17
   - [CategoryRow](../src/components/CategoryRow.tsx) takes an optional `limit`;
@@ -81,6 +140,23 @@ Source review: post-merge holistic review on 2026-06-17.
 ---
 
 ## 🟢 Minor — polish
+
+- [x] **31. QualitySelector is now a real focusable row; pointer hover cue added.**
+  ✅ 2026-06-17
+  - **Done:** [QualitySelector](../src/components/QualitySelector.tsx) is a
+    `data-row` with `useFocusNav` and `data-focusable` buttons (reachable via the
+    Player grid nav from #28); the global `:hover` outline from #30 gives Magic
+    Remote pointer-mode users feedback before clicking. Covered by updated
+    `QualitySelector.test.tsx`.
+
+- [ ] **32. OLED burn-in: static bright chrome in fixed positions.** The `Live TV`
+  `<h1>`, row titles, and [TopBar](../src/components/TopBar.tsx) buttons sit in the
+  exact same screen position every session. On the target LG C3 OLED this is a
+  (low) burn-in risk. Low urgency — the dark theme already mitigates it, and the
+  new Player [ControlBar](../src/components/ControlBar.tsx) uses translucent dark
+  backgrounds per the guideline. Remaining: keep Home chrome low-luminance and
+  avoid bright fixed badges/logos; revisit if an always-on HUD is added. Left open
+  as a design watch-item, not a discrete fix.
 
 - [x] **7. Broken logos fall back to the placeholder.** ✅ 2026-06-17
   - [ChannelCard.tsx](../src/components/ChannelCard.tsx) now tracks a `broken`

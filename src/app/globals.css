@@ -42,6 +42,36 @@ a {
   text-decoration: none;
 }
 
+/* Focus must be unmistakable from across the room (10-foot UI). Native form
+   controls (checkboxes, plain buttons) otherwise show only a thin default ring
+   that's invisible on a TV. A high-contrast outline + slight scale applies to
+   everything reachable by the D-pad. */
+[data-focusable]:focus,
+[data-focusable]:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* Magic Remote pointer mode has no focus until click — give hovered controls a
+   matching cue so pointer users get feedback too. */
+[data-focusable]:hover {
+  outline: 3px solid rgba(255, 255, 255, 0.6);
+  outline-offset: 3px;
+}
+
+/* webkit prefix kept for older webOS Chromium builds. */
+input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  -webkit-transform: scale(1);
+  accent-color: #4da3ff;
+}
+input[type="checkbox"][data-focusable]:focus {
+  outline: 3px solid #fff;
+  outline-offset: 4px;
+}
+
 @media (prefers-color-scheme: dark) {
   html {
     color-scheme: dark;

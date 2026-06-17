@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import type { Channel } from "@/lib/types";
 import { CategoryRow } from "./CategoryRow";
 import { useChannels } from "@/hooks/useChannels";
+import { isBackKey } from "@/lib/keys";
 import { setLastChannel, pushRecent } from "@/lib/storage";
 
 export function SearchView() {
@@ -24,7 +25,7 @@ export function SearchView() {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const editing = document.activeElement === inputRef.current && q !== "";
-      if (e.key === "Escape" || (e.key === "Backspace" && !editing)) {
+      if (isBackKey(e) || (e.key === "Backspace" && !editing)) {
         router.push("/");
       }
     }

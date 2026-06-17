@@ -10,7 +10,7 @@ export function ChannelCard({
     <button
       data-focusable
       onClick={() => onSelect(channel)}
-      onKeyDown={(e) => { if (e.key === "Enter") onSelect(channel); }}
+      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onSelect(channel); } }}
       style={{
         display: "flex", flexDirection: "column", alignItems: "center",
         width: 160, padding: 12, background: "#161616", color: "#eee",

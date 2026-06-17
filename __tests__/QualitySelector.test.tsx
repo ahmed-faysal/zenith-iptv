@@ -34,4 +34,31 @@ describe("QualitySelector", () => {
     await userEvent.click(screen.getByRole("button", { name: "720p" }));
     expect(onSelect).toHaveBeenCalledWith(1);
   });
+
+  it("is a D-pad-reachable row: data-row with focusable buttons", () => {
+    const { container } = render(
+      <QualitySelector
+        levels={[{ height: 1080 }, { height: 720 }]}
+        current={-1}
+        onSelect={() => {}}
+      />
+    );
+    expect(container.querySelector("[data-row]")).not.toBeNull();
+    // Auto + 2 levels = 3 focusable buttons.
+    expect(container.querySelectorAll("button[data-focusable]").length).toBe(3);
+  });
+
+  it("selects a level with the Enter key (remote OK)", async () => {
+    const onSelect = vi.fn();
+    render(
+      <QualitySelector
+        levels={[{ height: 1080 }, { height: 720 }]}
+        current={-1}
+        onSelect={onSelect}
+      />
+    );
+    screen.getByRole("button", { name: "1080p" }).focus();
+    await userEvent.keyboard("{Enter}");
+    expect(onSelect).toHaveBeenCalledWith(0);
+  });
 });
