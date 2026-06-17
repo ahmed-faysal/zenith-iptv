@@ -34,4 +34,30 @@ describe("parseM3U", () => {
     const noId = `#EXTM3U\n#EXTINF:-1 group-title="News",Some Channel\nhttp://x/y.m3u8\n`;
     expect(parseM3U(noId)[0].id).toBe("some-channel");
   });
+  it("de-duplicates channels that share an id, keeping the first", () => {
+    // iptv-org lists some channels several times (same tvg-id, different source).
+    const m3u = `#EXTM3U
+#EXTINF:-1 tvg-id="CNN.us" group-title="News",CNN One
+http://x/1.m3u8
+#EXTINF:-1 tvg-id="CNN.us" group-title="News",CNN Two
+http://x/2.m3u8
+`;
+    const ch = parseM3U(m3u);
+    expect(ch).toHaveLength(1);
+    expect(ch[0].name).toBe("CNN One");
+  });
+  it("generates distinct, non-empty ids for non-Latin names", () => {
+    // Both names slugged to "576p" under an ASCII-only slug, colliding.
+    const m3u = `#EXTM3U
+#EXTINF:-1 tvg-id="" group-title="Undefined",交城電視台 (576p)
+http://x/a.m3u8
+#EXTINF:-1 tvg-id="" group-title="Undefined",京视剧场 (576p)
+http://x/b.m3u8
+`;
+    const ch = parseM3U(m3u);
+    expect(ch).toHaveLength(2);
+    expect(ch[0].id).not.toBe("");
+    expect(ch[1].id).not.toBe("");
+    expect(ch[0].id).not.toBe(ch[1].id);
+  });
 });

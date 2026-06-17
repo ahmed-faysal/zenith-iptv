@@ -7,12 +7,17 @@ function attr(line: string, key: string): string {
 }
 
 function slug(name: string): string {
-  return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  // Keep letters/numbers from any script (\p{L}\p{N}) so non-Latin names (e.g.
+  // CJK) don't collapse to a stray quality tag like "576p" or an empty string.
+  return name.toLowerCase().trim().replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-+|-+$/g, "");
 }
 
 export function parseM3U(text: string): Channel[] {
   const lines = text.split(/\r?\n/);
   const channels: Channel[] = [];
+  // id is the channel's identity (React keys, routing, favorites), and iptv-org
+  // lists some channels multiple times — keep the first occurrence of each id.
+  const seen = new Set<string>();
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -22,13 +27,16 @@ export function parseM3U(text: string): Channel[] {
     if (!url || url.startsWith("#")) continue;
 
     const name = line.slice(line.lastIndexOf(",") + 1).trim();
+    const id = attr(line, "tvg-id") || slug(name);
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+
     const group = attr(line, "group-title");
     const languages = attr(line, "tvg-language").split(";").filter(Boolean);
     const countries = attr(line, "tvg-country").split(";").filter(Boolean);
-    const tvgId = attr(line, "tvg-id");
 
     channels.push({
-      id: tvgId || slug(name),
+      id,
       name,
       logo: attr(line, "tvg-logo"),
       streamUrl: url,

@@ -8,6 +8,19 @@ Source review: post-merge holistic review on 2026-06-17.
 
 ---
 
+## ✅ Fixed during local testing (2026-06-17)
+
+- [x] **Duplicate React keys / duplicate & hidden channels.** The console flagged
+  repeated keys (e.g. `576p`, `21-jump-street`). Two root causes in
+  [m3u.ts](../src/lib/m3u.ts): (1) `slug()` kept only ASCII, so non-Latin (CJK)
+  names collapsed to a stray quality tag or empty string — now Unicode-aware
+  (`\p{L}\p{N}`), recovering ~200 distinct channels; (2) iptv-org lists some
+  channels multiple times — `parseM3U` now de-dupes by id (keeps first). Verified
+  against the live feed: 10,985 channels, zero duplicate ids. Covered by
+  `__tests__/m3u.test.ts`.
+
+---
+
 ## 🔴 Critical — broken features (fix first)
 
 - [x] **1. EPG "now playing" removed for v1 (data source 404'd).** ✅ 2026-06-17
