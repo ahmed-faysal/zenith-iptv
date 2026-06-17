@@ -21,9 +21,6 @@ export function ChannelCard({
         ? <img src={channel.logo} alt="" width={96} height={54} style={{ objectFit: "contain" }} />
         : <div style={{ width: 96, height: 54, background: "#333", borderRadius: 6 }} />}
       <span style={{ marginTop: 8, fontWeight: 600, textAlign: "center" }}>{channel.name}</span>
-      {channel.nowPlaying && (
-        <span style={{ fontSize: 12, opacity: 0.7, textAlign: "center" }}>{channel.nowPlaying}</span>
-      )}
     </button>
   );
 }

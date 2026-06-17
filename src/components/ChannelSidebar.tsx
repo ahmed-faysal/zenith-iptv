@@ -1,5 +1,5 @@
 "use client";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import type { Channel } from "@/lib/types";
 import { useFocusNav } from "@/hooks/useFocusNav";
 
@@ -8,6 +8,12 @@ export function ChannelSidebar({
 }: { channels: Channel[]; open: boolean; onSelect: (c: Channel) => void }) {
   const ref = useRef<HTMLDivElement>(null);
   useFocusNav(ref, { orientation: "vertical" });
+
+  // Land on the first channel when the sidebar opens so the remote has a target.
+  useEffect(() => {
+    if (!open) return;
+    ref.current?.querySelector<HTMLElement>("[data-focusable]")?.focus();
+  }, [open]);
   return (
     <aside
       ref={ref}

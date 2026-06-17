@@ -10,55 +10,29 @@ Source review: post-merge holistic review on 2026-06-17.
 
 ## 🔴 Critical — broken features (fix first)
 
-- [ ] **1. EPG "now playing" never works — data source 404s.**
-  - The EPG URL `https://iptv-org.github.io/epg/guides/full.xml` returns **404**.
-    iptv-org no longer hosts a single pre-generated guide; their EPG project is a
-    generator you self-host. So [epg-source.ts](../src/lib/epg-source.ts)'s fetch
-    always throws, [api/epg/route.ts](../src/app/api/epg/route.ts) always returns
-    `{}`, and the player overlay never shows program info.
-  - **Sources investigated (2026-06-17):**
-    - `iptv-epg.org` — serves real XMLTV, free, no key, and uses the same
-      `tvg-id` channel-id convention we match on. **But** files are per-country
-      and huge (US alone = **504 MB**, ~1.08M programmes, served via a hashed
-      redirect URL). Fetching + regex-parsing on-demand would OOM/timeout a
-      Vercel serverless function (especially Hobby tier). The `.gz` transfers
-      smaller but still decompresses to 504 MB to parse. **Not viable for the
-      current fetch-whole-file-on-demand design.**
-    - `github.com/iptv-org/epg` — the official tool is a **generator you run**
-      (npm/Docker) against a channel list to produce a slim XMLTV for only your
-      channels. No giant static feed to fetch.
-  - **Fix (pick one):**
-    - (a) **Remove EPG for v1** — delete `/api/epg`, `epg-source.ts`, `epg.ts`,
-      and the `epg.now` usage in [WatchView.tsx](../src/components/WatchView.tsx).
-      Honest and clean; revisit later. (Also resolves #10.)
-    - (b) **Self-hosted slim EPG (proper fix, needs its own spec):** a scheduled
-      GitHub Action/cron runs the iptv-org/epg generator (or pre-filters an
-      iptv-epg.org country file) against our channel list, producing a small
-      XMLTV we host; `/api/epg` reads that slim file. Real mini-feature.
-    - (c) **Per-channel EPG API (research first):** if a service like `epg.pw`
-      returns a single channel's guide in a small response, that fits our
-      on-demand model with minimal change. Verify availability/format before
-      committing.
-  - **Decision needed:** (a) remove now, or schedule (b)/(c) as a follow-up spec.
+- [x] **1. EPG "now playing" removed for v1 (data source 404'd).** ✅ 2026-06-17
+  - The old EPG URL `https://iptv-org.github.io/epg/guides/full.xml` returns **404**
+    (iptv-org no longer hosts a single pre-generated guide), so the feature only
+    ever rendered nothing. Removed the EPG plumbing and the now-playing UI:
+    deleted `/api/epg`, `src/lib/epg-source.ts`, `src/lib/epg.ts`, the
+    `EpgEntry`/`EpgProgramme` types, and the `epg.now` overlay in
+    [WatchView.tsx](../src/components/WatchView.tsx). Also resolves #10.
+  - Reviving EPG properly is parked as a future improvement — see **#26**.
 
-- [ ] **2. TV remote can't move between rows — vertical D-pad nav missing.**
-  - Each [CategoryRow](../src/components/CategoryRow.tsx) handles only horizontal
-    arrows. Nothing coordinates up/down between rows on
-    [HomeView](../src/components/HomeView.tsx). On the LG remote you can move
-    within the first row but can't reach Sports/Entertainment/etc. Tab isn't on a
-    TV remote.
-  - **Fix:** add vertical row-to-row focus navigation (e.g. ArrowDown/ArrowUp
-    moves focus to the nearest card in the adjacent row), or a grid-aware focus
-    manager spanning all rows.
+- [x] **2. Vertical D-pad nav between rows.** ✅ 2026-06-17
+  - Added [useGridFocus.ts](../src/hooks/useGridFocus.ts), a container-level hook on
+    [HomeView](../src/components/HomeView.tsx) that treats the rows as a grid:
+    ArrowDown/ArrowUp move focus to the **same column index** in the adjacent row
+    (clamped to that row's length). Each [CategoryRow](../src/components/CategoryRow.tsx)
+    is marked `data-row` and keeps its existing horizontal `useFocusNav` (different
+    keys, no conflict). Covered by `__tests__/useGridFocus.test.tsx`.
 
-- [ ] **3. No initial focus on load — cold app is dead to a remote.**
-  - On Home nothing is focused at mount, so [useFocusNav.ts:21](../src/hooks/useFocusNav.ts#L21)
-    returns early (`idx === -1`) and arrow keys do nothing until a card is
-    clicked. Remote-only TVs have no way to start.
-  - **Fix:** focus the first card on Home after channels load; focus the first
-    sidebar item when the player sidebar opens
-    ([ChannelSidebar.tsx](../src/components/ChannelSidebar.tsx) /
-    [WatchView.tsx](../src/components/WatchView.tsx)).
+- [x] **3. Initial focus on load.** ✅ 2026-06-17
+  - `useGridFocus` focuses the first card as soon as channels render (the `ready`
+    flag), so a remote-only TV has a starting point.
+    [ChannelSidebar](../src/components/ChannelSidebar.tsx) now focuses its first
+    item when it opens. Covered by `useGridFocus.test.tsx` and
+    `__tests__/ChannelSidebar.test.tsx`.
 
 ---
 
@@ -104,12 +78,10 @@ Source review: post-merge holistic review on 2026-06-17.
   - [source.ts:10](../src/lib/source.ts#L10) — test-only helper exported from the
     app module. Harmless; tidy if convenient.
 
-- [ ] **10. "Now playing" on channel cards is a dead branch.**
-  - [ChannelCard.tsx](../src/components/ChannelCard.tsx) renders `channel.nowPlaying`,
-    but the channels API never populates it (joining EPG to all 11k channels is
-    out of scope). Tied to issue #1's EPG decision.
-  - **Fix:** remove the dead branch (and the `nowPlaying` field) unless EPG is
-    revived and joined into the channel list.
+- [x] **10. "Now playing" dead branch removed.** ✅ 2026-06-17
+  - Removed the unused `channel.nowPlaying` render in
+    [ChannelCard.tsx](../src/components/ChannelCard.tsx) and the `nowPlaying` field
+    on the `Channel` type (it was never populated). Done alongside #1.
 
 ---
 
@@ -152,7 +124,7 @@ than the raw M3U we currently parse. All of the below sit behind the existing
     waiting for the hls manifest; complements the existing QualitySelector.
 
 > Note: `guides.json` (channel → EPG site mapping) is the missing piece for the
-> proper slim-EPG build in option (b) of issue **#1**.
+> proper slim-EPG build in the EPG revival, **#26**.
 
 ---
 
@@ -184,3 +156,28 @@ for full notes. Summary:
 - [ ] **19. Multi-view** — watch several channels at once (cut from v1).
 - [ ] **20. Cloudflare Pages migration** — only if the app ever goes
   commercial/public (Vercel free tier prohibits commercial use).
+
+- [ ] **26. Revive EPG ("now / next" program guide).** Removed in v1 (#1) because
+  the old feed 404'd. To bring it back, **rebuild the data source first** — the
+  old fetch-whole-file-on-demand design can't work:
+  - **Sources investigated (2026-06-17):**
+    - `iptv-epg.org` — real XMLTV, free, no key, same `tvg-id` convention we
+      match on. **But** per-country files are huge (US alone = **504 MB**,
+      ~1.08M programmes, hashed redirect URL). Fetching + parsing on demand would
+      OOM/timeout a Vercel function; `.gz` transfers smaller but still
+      decompresses to 504 MB. **Not viable on demand.**
+    - `github.com/iptv-org/epg` — the official tool is a **generator you run**
+      (npm/Docker) against a channel list to produce a slim XMLTV for only your
+      channels. `guides.json` (see the data-source section) maps each channel to
+      its EPG site — the missing input for this build.
+  - **Approach (pick one):**
+    - (a) **Self-hosted slim EPG (proper fix):** a scheduled GitHub Action/cron
+      runs the iptv-org/epg generator (or pre-filters an iptv-epg.org country
+      file) against our channel list, producing a small XMLTV we host; a new
+      `/api/epg` reads that slim file. Real mini-feature — needs its own spec.
+    - (b) **Per-channel EPG API (research first):** if a service like `epg.pw`
+      returns one channel's guide in a small response, that fits an on-demand
+      model with minimal change. Verify availability/format before committing.
+  - When revived, re-add the `epg.now` overlay in
+    [WatchView.tsx](../src/components/WatchView.tsx); optionally re-introduce
+    `nowPlaying` on cards (#10) only if EPG is joined into the channel list.

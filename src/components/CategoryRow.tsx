@@ -16,6 +16,7 @@ export function CategoryRow({
       <h2 style={{ color: "#eee", margin: "0 0 12px 16px", fontSize: 20 }}>{title}</h2>
       <div
         ref={ref}
+        data-row
         style={{ display: "flex", gap: 12, overflowX: "auto", padding: "0 16px" }}
       >
         {channels.map((c) => (

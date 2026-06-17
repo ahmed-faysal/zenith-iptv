@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Channel, EpgEntry } from "@/lib/types";
+import type { Channel } from "@/lib/types";
 import { VideoPlayer } from "./VideoPlayer";
 import { ChannelSidebar } from "./ChannelSidebar";
 import { setLastChannel, pushRecent, toggleFavorite, isFavorite } from "@/lib/storage";
@@ -10,7 +10,6 @@ export function WatchView({ channelId }: { channelId: string }) {
   const router = useRouter();
   const [channels, setChannels] = useState<Channel[]>([]);
   const [active, setActive] = useState<Channel | null>(null);
-  const [epg, setEpg] = useState<EpgEntry>({});
   const [sidebar, setSidebar] = useState(false);
   const [fav, setFav] = useState(false);
 
@@ -27,8 +26,6 @@ export function WatchView({ channelId }: { channelId: string }) {
     setLastChannel(active.id);
     pushRecent(active.id);
     setFav(isFavorite(active.id));
-    fetch(`/api/epg?channelId=${encodeURIComponent(active.id)}`)
-      .then((r) => r.json()).then(setEpg).catch(() => setEpg({}));
   }, [active]);
 
   function toggleFav() {
@@ -63,7 +60,6 @@ export function WatchView({ channelId }: { channelId: string }) {
           {fav ? "★" : "☆"}
         </button>
         <strong>{active.name}</strong>
-        {epg.now && <span style={{ opacity: 0.8 }}>{epg.now.title}</span>}
       </div>
       <ChannelSidebar channels={channels} open={sidebar} onSelect={(c) => { setActive(c); setSidebar(false); }} />
     </div>

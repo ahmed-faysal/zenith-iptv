@@ -7,14 +7,13 @@ import type { Channel } from "@/lib/types";
 const ch: Channel = {
   id: "A.x", name: "Channel A", logo: "http://x/a.png",
   streamUrl: "http://x/a.m3u8", category: "News",
-  languages: ["English"], countries: ["GB"], nowPlaying: "Morning News",
+  languages: ["English"], countries: ["GB"],
 };
 
 describe("ChannelCard", () => {
-  it("renders name and now-playing", () => {
+  it("renders channel name", () => {
     render(<ChannelCard channel={ch} onSelect={() => {}} />);
     expect(screen.getByText("Channel A")).toBeInTheDocument();
-    expect(screen.getByText("Morning News")).toBeInTheDocument();
   });
   it("calls onSelect when activated with Enter", async () => {
     const onSelect = vi.fn();

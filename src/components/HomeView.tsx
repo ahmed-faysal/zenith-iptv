@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Channel, AppCategory } from "@/lib/types";
 import { CategoryRow } from "./CategoryRow";
 import { SettingsPanel } from "./SettingsPanel";
+import { useGridFocus } from "@/hooks/useGridFocus";
 import { getFavorites, getRecents, getPrefs, setLastChannel, pushRecent } from "@/lib/storage";
 
 const ORDER: AppCategory[] = ["News", "Sports", "Entertainment", "Music", "Kids", "Other"];
@@ -13,6 +14,7 @@ export function HomeView() {
   const [channels, setChannels] = useState<Channel[] | null>(null);
   const [error, setError] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     fetch("/api/channels")
@@ -20,6 +22,9 @@ export function HomeView() {
       .then((d) => setChannels(d.channels ?? []))
       .catch(() => setError(true));
   }, []);
+
+  // Cross-row D-pad navigation + initial focus once channels are on screen.
+  useGridFocus(mainRef, !!channels && !error && !showSettings);
 
   if (error) return <p style={{ padding: 24 }}>Could not load channels. Please retry later.</p>;
   if (!channels) return <p style={{ padding: 24 }}>Loading channels…</p>;
@@ -42,7 +47,7 @@ export function HomeView() {
   }
 
   return (
-    <main style={{ paddingTop: 16 }}>
+    <main ref={mainRef} style={{ paddingTop: 16 }}>
       <h1 style={{ margin: "0 0 24px 16px" }}>Live TV</h1>
       <button onClick={() => setShowSettings(true)} style={{ marginLeft: 16 }}>⚙ Settings</button>
       {showSettings && <SettingsPanel onClose={() => { setShowSettings(false); router.refresh(); }} />}

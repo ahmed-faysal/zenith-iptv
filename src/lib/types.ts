@@ -6,14 +6,6 @@ export type Channel = {
   category: string;
   languages: string[];
   countries: string[];
-  nowPlaying?: string;
-};
-
-export type EpgProgramme = { title: string; start: string; end: string };
-
-export type EpgEntry = {
-  now?: EpgProgramme;
-  next?: { title: string; start: string };
 };
 
 export type Prefs = {
