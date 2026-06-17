@@ -7,7 +7,7 @@ import { ChannelSidebar } from "./ChannelSidebar";
 import { ControlBar } from "./ControlBar";
 import { useChannels } from "@/hooks/useChannels";
 import { useGridFocus } from "@/hooks/useGridFocus";
-import { isBackKey } from "@/lib/keys";
+import { isBackKey, mediaAction } from "@/lib/keys";
 import { setLastChannel, pushRecent, toggleFavorite, isFavorite } from "@/lib/storage";
 
 export function WatchView({ channelId }: { channelId: string }) {
@@ -18,6 +18,7 @@ export function WatchView({ channelId }: { channelId: string }) {
   const [override, setOverride] = useState<Channel | null>(null);
   const active = override ?? channels.find((c) => c.id === channelId) ?? null;
   const [sidebar, setSidebar] = useState(false);
+  const [paused, setPaused] = useState(false);
   // `fav` is derived from storage each render; bumping forces a re-read after a
   // toggle (avoids syncing derived state through an effect).
   const [, bumpFav] = useState(0);
@@ -41,14 +42,21 @@ export function WatchView({ channelId }: { channelId: string }) {
     bumpFav((n) => n + 1);
   }
 
-  // Back closes the sidebar first, then returns Home. Works with the webOS Back
-  // button (keyCode 461) as well as Escape/Backspace.
+  // Back closes the sidebar first, then returns Home. The remote's transport
+  // buttons (Play/Pause/Stop) drive playback. Works with the webOS Back button
+  // (keyCode 461) and media keycodes as well as the standard names.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (isBackKey(e) || e.key === "Backspace") {
         if (sidebar) setSidebar(false);
         else router.push("/");
+        return;
       }
+      const m = mediaAction(e);
+      if (m === "toggle") setPaused((p) => !p);
+      else if (m === "play") setPaused(false);
+      else if (m === "pause") setPaused(true);
+      else if (m === "stop") router.push("/");
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -61,14 +69,16 @@ export function WatchView({ channelId }: { channelId: string }) {
       <ControlBar
         channelName={active.name}
         isFavorite={fav}
+        isPaused={paused}
         onToggleFavorite={toggleFav}
+        onTogglePlay={() => setPaused((p) => !p)}
         onOpenChannels={() => setSidebar(true)}
       />
-      <VideoPlayer src={active.streamUrl} />
+      <VideoPlayer src={active.streamUrl} paused={paused} />
       <ChannelSidebar
         channels={channels}
         open={sidebar}
-        onSelect={(c) => { setOverride(c); setSidebar(false); }}
+        onSelect={(c) => { setOverride(c); setSidebar(false); setPaused(false); }}
         onClose={() => setSidebar(false)}
       />
     </div>

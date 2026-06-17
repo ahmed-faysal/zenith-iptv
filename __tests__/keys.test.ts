@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { isBackKey, BACK_KEYCODE } from "@/lib/keys";
+import { isBackKey, mediaAction, BACK_KEYCODE } from "@/lib/keys";
 
 // A TV remote's Back button differs by platform: webOS sends keyCode 461 (and
 // often key "GoBack" or "Unidentified"), while desktop/other TVs send Escape.
@@ -23,5 +23,29 @@ describe("isBackKey", () => {
   });
   it("does not treat Backspace as Back (callers handle it contextually)", () => {
     expect(isBackKey(ev({ key: "Backspace", keyCode: 8 }))).toBe(false);
+  });
+});
+
+describe("mediaAction", () => {
+  it("maps the Play/Pause toggle key", () => {
+    expect(mediaAction(ev({ key: "MediaPlayPause" }))).toBe("toggle");
+    expect(mediaAction(ev({ keyCode: 10252 }))).toBe("toggle"); // common TV code
+    expect(mediaAction(ev({ keyCode: 179 }))).toBe("toggle");
+  });
+  it("maps a dedicated Play key", () => {
+    expect(mediaAction(ev({ key: "MediaPlay" }))).toBe("play");
+    expect(mediaAction(ev({ keyCode: 415 }))).toBe("play");
+  });
+  it("maps a dedicated Pause key", () => {
+    expect(mediaAction(ev({ key: "MediaPause" }))).toBe("pause");
+    expect(mediaAction(ev({ keyCode: 19 }))).toBe("pause");
+  });
+  it("maps the Stop key", () => {
+    expect(mediaAction(ev({ key: "MediaStop" }))).toBe("stop");
+    expect(mediaAction(ev({ keyCode: 413 }))).toBe("stop");
+  });
+  it("returns null for non-media keys", () => {
+    expect(mediaAction(ev({ key: "Enter", keyCode: 13 }))).toBeNull();
+    expect(mediaAction(ev({ key: "ArrowDown", keyCode: 40 }))).toBeNull();
   });
 });

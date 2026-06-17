@@ -5,12 +5,21 @@ import { QualitySelector, type Level } from "./QualitySelector";
 
 type Status = "loading" | "playing" | "error";
 
-export function VideoPlayer({ src }: { src: string }) {
+export function VideoPlayer({ src, paused = false }: { src: string; paused?: boolean }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [status, setStatus] = useState<Status>("loading");
   const [levels, setLevels] = useState<Level[]>([]);
   const [current, setCurrent] = useState(-1);
+
+  // Apply the user's play/pause intent. For a live stream, resuming lets hls.js
+  // catch back up toward the live edge.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (paused) video.pause();
+    else video.play().catch(() => {});
+  }, [paused]);
 
   useEffect(() => {
     const video = videoRef.current;

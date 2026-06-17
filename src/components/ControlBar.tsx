@@ -12,11 +12,13 @@ const btn: React.CSSProperties = {
 };
 
 export function ControlBar({
-  channelName, isFavorite, onToggleFavorite, onOpenChannels,
+  channelName, isFavorite, isPaused, onToggleFavorite, onTogglePlay, onOpenChannels,
 }: {
   channelName: string;
   isFavorite: boolean;
+  isPaused: boolean;
   onToggleFavorite: () => void;
+  onTogglePlay: () => void;
   onOpenChannels: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -31,6 +33,15 @@ export function ControlBar({
         display: "flex", alignItems: "center", gap: 12, color: "#fff",
       }}
     >
+      <button
+        data-focusable
+        onClick={onTogglePlay}
+        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); onTogglePlay(); } }}
+        aria-label={isPaused ? "Play" : "Pause"}
+        style={btn}
+      >
+        {isPaused ? "▶" : "⏸"}
+      </button>
       <button
         data-focusable
         onClick={onToggleFavorite}

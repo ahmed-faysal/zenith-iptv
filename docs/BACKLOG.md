@@ -93,6 +93,18 @@ Source review: post-merge holistic review on 2026-06-17.
 
 ## 🟡 Important — performance & reachability
 
+- [x] **33. Player media controls (play/pause + remote transport keys).** ✅ 2026-06-17
+  - The player had no transport controls and ignored the remote's hardware media
+    buttons entirely. **Done:** [ControlBar](../src/components/ControlBar.tsx) now
+    leads with a focusable **Play/Pause** button (also the player's initial focus);
+    [VideoPlayer](../src/components/VideoPlayer.tsx) takes a `paused` prop and
+    applies it (resume lets hls.js catch back up to the live edge). New
+    [keys.ts](../src/lib/keys.ts) `mediaAction()` maps the remote's Play (415),
+    Pause (19), Play/Pause (10252/179) and Stop (413) keys — handled in
+    [WatchView](../src/components/WatchView.tsx) (Stop → Home). Switching channels
+    resumes playback. Seek/FF/RW deliberately omitted — not meaningful for live
+    (see catchup, #15). Covered by `keys.test.ts` and `ControlBar.test.tsx`.
+
 - [x] **29. Modals close on Back/Escape and restore focus.** ✅ 2026-06-17
   - **Done:** [SettingsPanel](../src/components/SettingsPanel.tsx) now closes on
     Back (window `isBackKey` listener) and restores focus to its opener on

@@ -12,8 +12,8 @@ driven entirely by a TV remote's D-pad — no mouse or keyboard required.
 
 - **Home** — Favorites, Continue Watching, and per-category rows (News, Sports,
   Entertainment, Music, Kids, Other), navigable as a grid with the D-pad.
-- **Player** — full-screen HLS playback, quality selector, a slide-in channel
-  sidebar, and a favorite toggle.
+- **Player** — full-screen HLS playback with play/pause, quality selector, a
+  slide-in channel sidebar, and a favorite toggle.
 - **Search** — live name search over the full catalogue, fully remote-navigable.
 - **Settings** — filter the catalogue by language/country using checkbox
   pick-lists (no typing needed on a remote).
@@ -49,9 +49,11 @@ moment to populate.
 | Backspace / Escape / Back | Back — closes the open panel, else returns Home (the LG remote's Back button, keyCode 461, is handled too) |
 | ↓ / ↑ (Search) | Move between the search box and the results |
 
-In the **Player**, an on-screen control strip (Favorite ★, ☰ Channels, and the
-quality picker when a stream offers multiple renditions) is fully D-pad
-navigable — no mouse, pointer, or physical letter keys required.
+In the **Player**, an on-screen control strip (Play/Pause ⏸, Favorite ★,
+☰ Channels, and the quality picker when a stream offers multiple renditions) is
+fully D-pad navigable — no mouse, pointer, or physical letter keys required. The
+remote's hardware **Play / Pause / Stop** buttons work too (Stop returns Home);
+seeking is omitted since the streams are live.
 
 ## Scripts
 
