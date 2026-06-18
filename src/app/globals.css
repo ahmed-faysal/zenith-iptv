@@ -5,7 +5,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #07080c;
     --foreground: #ededed;
   }
 }
@@ -25,7 +25,13 @@ body {
   display: flex;
   flex-direction: column;
   color: var(--foreground);
-  background: var(--background);
+  /* Layered depth instead of flat black: a top accent glow over a vertical
+     fade. Cheap on the GPU and kills the "empty void" feel on a big screen. */
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(77, 163, 255, 0.12), transparent 60%),
+    radial-gradient(80% 60% at 90% 0%, rgba(140, 90, 255, 0.10), transparent 55%),
+    linear-gradient(180deg, #0b0d14 0%, #07080c 40%, #050609 100%);
+  background-attachment: fixed;
   font-family: Arial, Helvetica, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -42,10 +48,10 @@ a {
   text-decoration: none;
 }
 
-/* Focus must be unmistakable from across the room (10-foot UI). Native form
-   controls (checkboxes, plain buttons) otherwise show only a thin default ring
-   that's invisible on a TV. A high-contrast outline + slight scale applies to
-   everything reachable by the D-pad. */
+/* ---- Focus (10-foot UI) -------------------------------------------------
+   Focus must be unmistakable from across the room. Native/plain controls get a
+   high-contrast white ring; richer components (cards) override with scale+glow
+   below. */
 [data-focusable]:focus,
 [data-focusable]:focus-visible {
   outline: 3px solid #fff;
@@ -53,8 +59,8 @@ a {
   border-radius: 6px;
 }
 
-/* Magic Remote pointer mode has no focus until click — give hovered controls a
-   matching cue so pointer users get feedback too. */
+/* Magic Remote pointer mode has no focus until click — mirror the cue on hover
+   so pointer users get feedback too. */
 [data-focusable]:hover {
   outline: 3px solid rgba(255, 255, 255, 0.6);
   outline-offset: 3px;
@@ -70,6 +76,340 @@ input[type="checkbox"] {
 input[type="checkbox"][data-focusable]:focus {
   outline: 3px solid #fff;
   outline-offset: 4px;
+}
+
+/* ---- Channel card -------------------------------------------------------
+   Responsive poster tile. Width scales with the viewport so the same grid
+   feels right on a phone/PC window and on a 4K TV from the couch. */
+.channel-card {
+  flex: 0 0 auto;
+  width: clamp(132px, 12vw, 208px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  background: transparent;
+  border: none;
+  border-radius: 16px;
+  color: #e8ecf2;
+  cursor: pointer;
+  scroll-snap-align: start;
+  transition: transform 0.16s ease;
+}
+
+.channel-card__plate {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border-radius: 14px;
+  /* Frosted glass so transparent and white-bg logos both sit on an intentional
+     surface instead of floating on black. */
+  background:
+    linear-gradient(160deg, rgba(255, 255, 255, 0.10), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.channel-card__logo {
+  max-width: 78%;
+  max-height: 70%;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+}
+
+.channel-card__fallback {
+  font-size: clamp(20px, 2vw, 30px);
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.channel-card__quality {
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  padding: 2px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  border-radius: 6px;
+  color: #cfe0ff;
+  background: rgba(10, 14, 22, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.channel-card__quality.is-hd {
+  color: #06121f;
+  background: #5ab0ff;
+  border-color: transparent;
+}
+
+.channel-card__title {
+  font-size: clamp(13px, 0.95vw, 16px);
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  /* clamp to 2 lines so rows stay even regardless of name length */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.channel-card__flags {
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  color: #f0b252;
+  opacity: 0.85;
+}
+
+/* Card focus/hover: white ring (Apple-calm) + blue glow (neon) + lift. Outline
+   is replaced by a ring shadow so the corners stay rounded. Pointer hover gets
+   the same treatment but no scale (avoids jitter while moving the Magic Remote). */
+.channel-card:focus,
+.channel-card:focus-visible,
+.channel-card:hover {
+  outline: none;
+}
+.channel-card:focus,
+.channel-card:focus-visible {
+  transform: scale(1.07);
+  z-index: 1;
+}
+.channel-card:focus .channel-card__plate,
+.channel-card:focus-visible .channel-card__plate,
+.channel-card:hover .channel-card__plate {
+  border-color: rgba(255, 255, 255, 0.85);
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.9),
+    0 12px 34px rgba(77, 163, 255, 0.5);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .channel-card,
+  .channel-card:focus,
+  .channel-card:focus-visible {
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ---- App bar ------------------------------------------------------------
+   Sticky, translucent, blurred chrome: brand on the left, scrollable category
+   tabs in the middle, search/settings on the right. */
+.app-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 14px clamp(16px, 3vw, 54px);
+  background: rgba(8, 10, 16, 0.72);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.app-bar__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+.app-bar__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  font-size: 18px;
+  background: linear-gradient(150deg, #4da3ff, #2f7ad6);
+  box-shadow: 0 4px 14px rgba(77, 163, 255, 0.45);
+}
+.app-bar__name {
+  font-size: clamp(17px, 1.4vw, 22px);
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  color: #fff;
+}
+
+.app-bar__tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1 1 auto;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.app-bar__tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  flex: 0 0 auto;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: #9aa6b5;
+  font-size: clamp(14px, 1vw, 16px);
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.tab:hover {
+  color: #e8ecf2;
+}
+.tab.is-active {
+  color: #fff;
+  background: rgba(77, 163, 255, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(120, 180, 255, 0.4);
+}
+/* Contained focus ring: an offset outline would spill outside the tabs'
+   overflow-x:auto container and render as a clipped arc (a stray ")"). */
+.tab:focus,
+.tab:focus-visible {
+  outline: none;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: inset 0 0 0 2px #fff;
+}
+.tab.is-active:focus,
+.tab.is-active:focus-visible {
+  background: rgba(77, 163, 255, 0.3);
+}
+
+.app-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: #e8ecf2;
+  font-size: 18px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* ---- Category row -------------------------------------------------------
+   Bold header with a count chip; a horizontally scrolling track with snap. The
+   vertical padding gives the focused card's scale + glow room not to clip. */
+.cat-row {
+  margin-bottom: clamp(20px, 2.5vw, 36px);
+}
+.cat-row__head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 0 clamp(16px, 3vw, 54px);
+  margin-bottom: 6px;
+}
+.cat-row__title {
+  font-size: clamp(18px, 1.7vw, 26px);
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.2px;
+}
+.cat-row__count {
+  font-size: 13px;
+  font-weight: 700;
+  color: #8b96a5;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+}
+.cat-row__track {
+  display: flex;
+  gap: clamp(10px, 1vw, 16px);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  padding: 14px clamp(16px, 3vw, 54px);
+  scrollbar-width: none;
+}
+.cat-row__track::-webkit-scrollbar {
+  display: none;
+}
+
+.home-main {
+  padding-bottom: clamp(32px, 5vh, 64px);
+}
+
+/* ---- Search screen ------------------------------------------------------ */
+.search-main {
+  padding-bottom: clamp(32px, 5vh, 64px);
+}
+.search-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px clamp(16px, 3vw, 54px);
+  background: rgba(8, 10, 16, 0.72);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1 1 auto;
+  max-width: 620px;
+  padding: 0 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+.search-field__icon {
+  font-size: 18px;
+  opacity: 0.8;
+}
+.search-input {
+  flex: 1 1 auto;
+  padding: 14px 0;
+  font-size: clamp(16px, 1.2vw, 20px);
+  background: transparent;
+  border: none;
+  color: #f0f3f8;
+}
+.search-input::placeholder {
+  color: #7d8896;
+}
+.search-input:focus {
+  outline: none;
+}
+.search-field:focus-within {
+  border-color: rgba(120, 180, 255, 0.7);
+  box-shadow: 0 0 0 3px rgba(77, 163, 255, 0.25);
+}
+.search-empty {
+  padding: clamp(40px, 8vh, 96px) clamp(16px, 3vw, 54px);
+  font-size: clamp(15px, 1.2vw, 19px);
+  color: #8b96a5;
+  text-align: center;
 }
 
 @media (prefers-color-scheme: dark) {

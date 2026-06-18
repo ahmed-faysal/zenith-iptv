@@ -10,7 +10,7 @@ export function QualitySelector({
   levels, current, onSelect,
 }: { levels: Level[]; current: number; onSelect: (levelIndex: number) => void }) {
   const ref = useRef<HTMLDivElement>(null);
-  useFocusNav(ref, { orientation: "horizontal" });
+  useFocusNav(ref, { orientation: "vertical" });
 
   if (levels.length <= 1) return null;
 
@@ -23,7 +23,7 @@ export function QualitySelector({
   const choose = (i: number) => () => onSelect(i);
 
   return (
-    <div ref={ref} data-row style={{ display: "flex", gap: 8 }}>
+    <div ref={ref} data-row style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 110 }}>
       <button data-focusable style={btn(current === -1)} onClick={choose(-1)}>Auto</button>
       {levels.map((l, i) => (
         <button key={i} data-focusable style={btn(current === i)} onClick={choose(i)}>

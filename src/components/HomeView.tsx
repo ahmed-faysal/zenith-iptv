@@ -11,6 +11,7 @@ import { topValues } from "@/lib/filters";
 import { getFavorites, getRecents, getPrefs, setLastChannel, pushRecent } from "@/lib/storage";
 
 const ORDER: AppCategory[] = ["News", "Sports", "Entertainment", "Music", "Kids", "Other"];
+const TABS = ["All", ...ORDER]; // app-bar category filter; "All" shows every row
 const ROW_LIMIT = 40; // cap huge category rows; the long tail lives in Search (#4)
 const FILTER_OPTIONS = 24; // most-common languages/countries offered in Settings
 
@@ -18,6 +19,7 @@ export function HomeView() {
   const router = useRouter();
   const { channels, error } = useChannels();
   const [showSettings, setShowSettings] = useState(false);
+  const [activeCat, setActiveCat] = useState<string>("All");
   const mainRef = useRef<HTMLElement>(null);
 
   // Initial focus once channels are on screen; cross-row nav is suspended while
@@ -50,6 +52,11 @@ export function HomeView() {
   const favorites = getFavorites().map((id) => byId.get(id)).filter(Boolean) as Channel[];
   const recents = getRecents().map((id) => byId.get(id)).filter(Boolean) as Channel[];
 
+  // The active tab narrows what's shown: "All" keeps the full layout; a category
+  // shows just that row, with Favorites/Continue-Watching filtered to match.
+  const inCat = (c: Channel) => activeCat === "All" || c.category === activeCat;
+  const shownCats = activeCat === "All" ? ORDER : ([activeCat] as AppCategory[]);
+
   function open(c: Channel) {
     setLastChannel(c.id);
     pushRecent(c.id);
@@ -57,9 +64,11 @@ export function HomeView() {
   }
 
   return (
-    <main ref={mainRef} style={{ paddingTop: 16 }}>
-      <h1 style={{ margin: "0 0 16px 16px" }}>Live TV</h1>
+    <main ref={mainRef} className="home-main">
       <TopBar
+        categories={TABS}
+        activeCategory={activeCat}
+        onCategory={setActiveCat}
         onSearch={() => router.push("/search")}
         onSettings={() => setShowSettings(true)}
       />
@@ -70,9 +79,9 @@ export function HomeView() {
           onClose={() => { setShowSettings(false); router.refresh(); }}
         />
       )}
-      <CategoryRow title="Favorites" channels={favorites} onSelect={open} />
-      <CategoryRow title="Continue Watching" channels={recents} onSelect={open} />
-      {ORDER.map((cat) => (
+      <CategoryRow title="Favorites" channels={favorites.filter(inCat)} onSelect={open} />
+      <CategoryRow title="Continue Watching" channels={recents.filter(inCat)} onSelect={open} />
+      {shownCats.map((cat) => (
         <CategoryRow
           key={cat}
           title={cat}

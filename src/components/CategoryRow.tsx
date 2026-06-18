@@ -13,13 +13,12 @@ export function CategoryRow({
   if (channels.length === 0) return null;
   const shown = limit ? channels.slice(0, limit) : channels;
   return (
-    <section style={{ marginBottom: 32 }}>
-      <h2 style={{ color: "#eee", margin: "0 0 12px 16px", fontSize: 20 }}>{title}</h2>
-      <div
-        ref={ref}
-        data-row
-        style={{ display: "flex", gap: 12, overflowX: "auto", padding: "0 16px" }}
-      >
+    <section className="cat-row">
+      <div className="cat-row__head">
+        <h2 className="cat-row__title">{title}</h2>
+        <span className="cat-row__count">{channels.length}</span>
+      </div>
+      <div ref={ref} data-row className="cat-row__track">
         {shown.map((c) => (
           <ChannelCard key={c.id} channel={c} onSelect={onSelect} />
         ))}
