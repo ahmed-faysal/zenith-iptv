@@ -7,17 +7,24 @@ import { VideoPlayer } from "./VideoPlayer";
 import { ChannelSidebar } from "./ChannelSidebar";
 import { PlayerOverlay } from "./PlayerOverlay";
 import { useChannels } from "@/hooks/useChannels";
+import { useEpg } from "@/hooks/useEpg";
 import { useGridFocus } from "@/hooks/useGridFocus";
 import { isBackKey, mediaAction } from "@/lib/keys";
+import { baseChannelId } from "@/lib/epg";
 import { setLastChannel, pushRecent, toggleFavorite, isFavorite } from "@/lib/storage";
 
 export function WatchView({ channelId }: { channelId: string }) {
   const router = useRouter();
   const { channels: loaded } = useChannels();
   const channels = loaded ?? [];
+  const epg = useEpg();
   // The route's channel by default; a sidebar pick swaps it in place.
   const [override, setOverride] = useState<Channel | null>(null);
   const active = override ?? channels.find((c) => c.id === channelId) ?? null;
+  // Show the current programme as the subtitle when EPG has it; else the category.
+  // EPG keys on the base xmltv_id, so strip our id's @feed suffix to look it up.
+  const nowPlaying = active ? epg[baseChannelId(active.id)]?.now : undefined;
+  const subtitle = nowPlaying ? `Now · ${nowPlaying.title}` : active?.category;
 
   const [sidebar, setSidebar] = useState(false);
   const [paused, setPaused] = useState(false);
@@ -132,7 +139,7 @@ export function WatchView({ channelId }: { channelId: string }) {
       />
       <PlayerOverlay
         channelName={active.name}
-        channelSubtitle={active.category}
+        channelSubtitle={subtitle}
         isPaused={paused}
         isFavorite={fav}
         volume={volume}

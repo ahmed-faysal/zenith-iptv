@@ -307,9 +307,16 @@ for full notes. Summary:
 - [ ] **20. Cloudflare Pages migration** — only if the app ever goes
   commercial/public (Vercel free tier prohibits commercial use).
 
-- [ ] **26. Revive EPG ("now / next" program guide).** Removed in v1 (#1) because
-  the old feed 404'd. To bring it back, **rebuild the data source first** — the
-  old fetch-whole-file-on-demand design can't work:
+- [~] **26. Revive EPG ("now / next" program guide).** **Implemented on branch
+  `feat/epg-revival`** (spec: [2026-06-18-epg-revival.md](superpowers/specs/2026-06-18-epg-revival.md)).
+  Slim guide pre-built in CI (`.github/workflows/epg.yml` + `scripts/build-epg-channels.ts`),
+  served by `/api/epg`, shown as "Now · …" in WatchView. **Dormant until** a repo
+  remote exists, the Action publishes the `epg` branch once, and `EPG_GUIDE_URL`
+  is set. Verified coverage: ~3,605 mapped channels once ids are matched on the
+  **base xmltv_id** (our ids carry an `@feed` suffix; the naive join gave ~1).
+  Country scoping is inert until the channels.json upgrade (#21) adds country data.
+  Removed in v1 (#1) because the old feed 404'd; the old fetch-whole-file-on-demand
+  design can't work:
   - **Sources investigated (2026-06-17):**
     - `iptv-epg.org` — real XMLTV, free, no key, same `tvg-id` convention we
       match on. **But** per-country files are huge (US alone = **504 MB**,
@@ -328,6 +335,32 @@ for full notes. Summary:
     - (b) **Per-channel EPG API (research first):** if a service like `epg.pw`
       returns one channel's guide in a small response, that fits an on-demand
       model with minimal change. Verify availability/format before committing.
+  - **Follow-up research (2026-06-18) — option (b) ruled out, (a) confirmed:**
+    - **No free, no-key, per-channel JSON EPG API exists** that keys on our
+      `tvg-id`s. Checked: `epg.pw` serves **bulk only** (all / `epg_lite` /
+      per-country XMLTV — no single-channel endpoint, no JSON); `epg.best`
+      (iptv-epg) has a REST/JSON API but requires **OAuth2** (key);
+      `Tvheadend`'s "mode=now" JSON API is a **self-hosted PVR server** that
+      itself needs EPG fed in (circular); `TVmaze` is free JSON but **show
+      metadata, not linear now/next** and won't map to arbitrary IPTV channels.
+      → On-demand per-channel fetch is not achievable from free sources.
+    - **`github.com/iptv-org/epg` is generator-only (confirmed current):** run
+      via npm/Docker, **no hosted feed**. Its `--channels <custom.xml>` flag is
+      purpose-built to scope output to *only our channels*, producing a single
+      slim `guide.xml` (`--gzip`, `--json` variants). `GUIDES.md` lists a few
+      tiny community-hosted servers (e.g. 2-channel render.com workers) — not
+      usable. Channel→site mapping for the custom XML comes from the API's
+      `guides.json` (see data-source section).
+  - **Recommended design (option a):** a scheduled **GitHub Action** (cron,
+    ~6–12h) builds a `<channel site site_id xmltv_id>` list from `guides.json`
+    filtered to the channels we surface (scope by enabled country/category to
+    keep it small — most of the 40k channels have no guide anyway), runs the
+    iptv-org/epg grabber against it, and publishes a slim `guide.xml(.gz)` +
+    JSON (committed to an `epg` branch / release asset / gh-pages). A new
+    `/api/epg` fetches that small file, parses XMLTV → a `now/next` map keyed by
+    `tvg-id`, and caches server-side (~1h). It's a self-contained mini-feature
+    (CI job + channels-builder script + XMLTV parser + `/api/epg`) — **needs its
+    own spec before building.**
   - When revived, re-add the `epg.now` overlay in
     [WatchView.tsx](../src/components/WatchView.tsx); optionally re-introduce
     `nowPlaying` on cards (#10) only if EPG is joined into the channel list.

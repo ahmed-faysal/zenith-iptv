@@ -1,0 +1,61 @@
+name: Build EPG guide
+
+# Pre-builds a slim XMLTV guide for only the channels we surface and publishes it
+# to the `epg` branch (force-pushed, single file, no history noise). The app's
+# /api/epg reads it via EPG_GUIDE_URL. See docs/superpowers/specs/2026-06-18-epg-revival.md
+on:
+  schedule:
+    - cron: "0 */6 * * *" # every 6 hours
+  workflow_dispatch: {}
+
+# NOTE: the bare index.m3u carries no tvg-country, so EPG_COUNTRIES scoping is
+# inert until the channels.json data-source upgrade (backlog #21) lands. Left
+# empty => build all ~3.6k channels that have a guide mapping (base xmltv_id).
+env:
+  EPG_COUNTRIES: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: epg-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout app
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build scoped channels.xml
+        run: npx tsx scripts/build-epg-channels.ts epg-build/custom.channels.xml
+
+      - name: Grab EPG (iptv-org/epg)
+        run: |
+          git clone --depth 1 https://github.com/iptv-org/epg.git .epg
+          cd .epg
+          npm install --no-audit --no-fund
+          npm run grab -- \
+            --channels=../epg-build/custom.channels.xml \
+            --maxConnections=5 --days=2 --gzip \
+            --output=../epg-build/guide.xml
+
+      - name: Publish to epg branch
+        run: |
+          test -f epg-build/guide.xml.gz || gzip -kf epg-build/guide.xml
+          mkdir publish && cp epg-build/guide.xml.gz publish/
+          cd publish
+          git init -q
+          git checkout -b epg
+          git add guide.xml.gz
+          git -c user.email=actions@users.noreply.github.com \
+              -c user.name=epg-bot commit -q -m "epg: update guide ($(date -u +%FT%TZ))"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" epg
