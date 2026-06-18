@@ -3,6 +3,10 @@
 Collected from: iptvnator (4gray/iptvnator), iptv-api (Guovin/iptv-api), iptv-org/iptv, iptv-org/database, iptv-org/awesome-iptv, Free-TV/IPTV
 Status: **under review** — not committed to backlog yet
 
+**Tier 1 (shipped to main):** #27, #28 (hls.js config) and #31 (buffering spinner)
+are done. #29 was dropped (option doesn't exist in hls.js — see note). #26 was
+re-scoped after reading the code (see note).
+
 ---
 
 ## Stream Quality & Health
@@ -161,29 +165,32 @@ Free-TV maintains a manually curated, HD-only, free-only list (~500 channels) wi
 
 ## hls.js — Non-obvious Production Patterns
 
-**26. Fatal error recovery by type** *(hls.js)*
+**26. Fatal error recovery by type** *(hls.js)* — _not done; re-scoped (Tier 4)_
 Three distinct recovery paths — mixing them up causes infinite load loops:
 - `MEDIA_ERROR` fatal → call `hls.recoverMediaError()` with ≥5s debounce
 - `NETWORK_ERROR` fatal → **don't auto-retry** (all retries exhausted) — show UI error
 - Any other fatal → call `hls.destroy()`
 - Non-fatal → self-healing, ignore
 
-We currently call `recoverMediaError()` indiscriminately — this needs fixing.
+**Correction:** the doc previously said we call `recoverMediaError()` indiscriminately
+— we don't call it at all. [VideoPlayer.tsx](../src/components/VideoPlayer.tsx) just
+flips to "Stream unavailable" on any fatal. So this is an _enhancement_ (add recovery),
+not a fix. Worth doing on the next VideoPlayer pass.
 
-**27. `backBufferLength: 30` for long-running streams** *(hls.js)*
-Default is `Infinity` — hls.js keeps all played segments in RAM forever. On a TV watched for hours this is a memory leak. Setting `backBufferLength: 30` evicts anything older than 30s. Critical for webOS.
+**27. `backBufferLength: 30` for long-running streams** *(hls.js)* — _✅ DONE_
+Default is `Infinity` — hls.js keeps all played segments in RAM forever. On a TV watched for hours this is a memory leak. Setting `backBufferLength: 30` evicts anything older than 30s. Critical for webOS. Shipped via `hlsConfig()` in [player.ts](../src/lib/player.ts).
 
-**28. `capLevelToPlayerSize: true`** *(hls.js)*
-Automatically caps ABR to the video element's rendered pixel dimensions. Prevents downloading 1080p when the element is displayed at 480p. Set once in Hls config, no code needed.
+**28. `capLevelToPlayerSize: true`** *(hls.js)* — _✅ DONE_
+Automatically caps ABR to the video element's rendered pixel dimensions. Prevents downloading 1080p when the element is displayed at 480p. Set once in Hls config, no code needed. Shipped via `hlsConfig()`.
 
-**29. `skipBufferHolePadding: 0.2` for Smart TV gap-jumping** *(hls.js)*
-webOS/Tizen/Xbox have `currentTime` rounding that blocks standard buffer-gap detection. This padding makes gap-jumping more tolerant. Low-risk config addition.
+**29. ~~`skipBufferHolePadding: 0.2`~~ for Smart TV gap-jumping** *(hls.js)* — _❌ DROPPED_
+`skipBufferHolePadding` **does not exist** in hls.js 1.6.16 (research-agent hallucination). The real buffer-gap option is `maxBufferHole` (default 0.1). Deferred: changing gap tolerance without on-device evidence is speculative tuning that risks subtle playback regressions. Revisit once we can test on the actual webOS TV.
 
 **30. `hls.bandwidthEstimate` for a signal-quality indicator** *(hls.js)*
 Read-only EWMA bandwidth estimate in bits/s. Poll this inside `FRAG_BUFFERED` or on a 5s interval to drive a signal-strength chip in the player overlay. No extra network calls.
 
-**31. Correct overlay events** *(hls.js)*
-- Buffering spinner: `video.waiting` (show) + `video.playing`/`canplay` (hide) — not hls events
+**31. Correct overlay events** *(hls.js)* — _buffering spinner ✅ DONE_
+- Buffering spinner: `video.waiting` (show) + `video.playing`/`canplay` (hide) — not hls events _(shipped — [VideoPlayer.tsx](../src/components/VideoPlayer.tsx))_
 - Quality badge: `LEVEL_SWITCHED` → `hls.levels[data.level].height` / `.bitrate`
 - Live latency: poll `hls.latency` + `hls.targetLatency`
 - FPS warnings: `FPS_DROP` event

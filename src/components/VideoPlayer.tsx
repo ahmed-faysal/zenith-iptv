@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
 import type { Level } from "./QualitySelector";
+import { hlsConfig } from "@/lib/player";
 
 type Status = "loading" | "playing" | "error";
 
@@ -21,14 +22,19 @@ export function VideoPlayer({
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [status, setStatus] = useState<Status>("loading");
+  // Distinct from `status`: a mid-playback stall (network hiccup on a live
+  // stream) while already playing. The initial load shows "Loading…" via
+  // `status`, so we only surface the spinner once playback has started.
+  const [buffering, setBuffering] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
     setStatus("loading");
+    setBuffering(false);
 
     if (Hls.isSupported()) {
-      const hls = new Hls();
+      const hls = new Hls(hlsConfig());
       hlsRef.current = hls;
       hls.loadSource(src);
       hls.attachMedia(video);
@@ -48,6 +54,25 @@ export function VideoPlayer({
     video.addEventListener("error", () => setStatus("error"));
     video.play().catch(() => {});
   }, [src, onLevels]);
+
+  // Buffering indicator: `waiting` fires when playback stalls for data;
+  // `playing`/`canplay` signal it has resumed. These are native media events,
+  // so they cover both the hls.js and Safari paths. Attached once — the
+  // <video> element is stable across src changes.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const onWaiting = () => setBuffering(true);
+    const onResume = () => setBuffering(false);
+    video.addEventListener("waiting", onWaiting);
+    video.addEventListener("playing", onResume);
+    video.addEventListener("canplay", onResume);
+    return () => {
+      video.removeEventListener("waiting", onWaiting);
+      video.removeEventListener("playing", onResume);
+      video.removeEventListener("canplay", onResume);
+    };
+  }, []);
 
   // Reflect play/pause intent. Resuming a live stream lets hls.js catch back up.
   useEffect(() => {
@@ -75,6 +100,9 @@ export function VideoPlayer({
       <video ref={videoRef} style={{ width: "100%", height: "100%" }} controls={false} />
       {status === "loading" && <Centered>Loading…</Centered>}
       {status === "error" && <Centered>Stream unavailable — try another channel</Centered>}
+      {status === "playing" && buffering && (
+        <Centered><span className="ltv-spinner" role="status" aria-label="Buffering" /></Centered>
+      )}
     </div>
   );
 }

@@ -1,5 +1,19 @@
 import { describe, it, expect } from "vitest";
-import { formatClock, qualityLabel } from "@/lib/player";
+import { formatClock, qualityLabel, hlsConfig } from "@/lib/player";
+
+describe("hlsConfig", () => {
+  it("caps the back-buffer so long sessions don't grow unbounded in RAM", () => {
+    // hls.js defaults backBufferLength to Infinity, which leaks memory on a TV
+    // left running for hours. 30s is plenty for live playback.
+    expect(hlsConfig().backBufferLength).toBe(30);
+  });
+  it("caps ABR to the rendered player size to avoid wasting bandwidth", () => {
+    expect(hlsConfig().capLevelToPlayerSize).toBe(true);
+  });
+  it("returns a fresh object each call (hls.js may mutate its config)", () => {
+    expect(hlsConfig()).not.toBe(hlsConfig());
+  });
+});
 
 describe("formatClock", () => {
   it("formats midnight as 12:xx AM", () => {
