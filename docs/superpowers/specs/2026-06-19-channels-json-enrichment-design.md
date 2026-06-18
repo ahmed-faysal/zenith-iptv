@@ -73,12 +73,13 @@ type Channel = {
   id: string; name: string; logo: string; streamUrl: string;
   category: AppCategory;        // canonical map (primary) → keyword fallback
   languages: string[]; countries: string[];   // countries now reliably populated
-  quality: string | null;       // NEW — from streams.json, else null
+  quality?: string | null;      // NEW — from streams.json, else null
 };
 ```
 - No `isNsfw` (family filter dropped), no `altNames`/headers (not in scope —
-  YAGNI). Only `quality` is added; `category`/`countries`/`logo` change source,
-  not shape.
+  YAGNI). Only `quality` is added, and **optional** so existing `Channel`
+  fixtures across the test suite need no change; `category`/`countries`/`logo`
+  change source, not shape.
 
 ## Modules
 
