@@ -1,6 +1,6 @@
 import { canonicalCategory } from "./categories";
 import { baseChannelId } from "./epg";
-import type { AppCategory } from "./types";
+import type { AppCategory, Channel } from "./types";
 
 export type RawLogo = {
   channel: string; feed: string | null; in_use: boolean; tags: string[];
@@ -61,4 +61,21 @@ export function buildEnrichment(
     if (Object.keys(entry).length) map[id] = entry;
   }
   return map;
+}
+
+// Merge enrichment onto channels by id. Enrichment wins where present; the
+// channel's M3U-derived value is the fallback. `country` becomes a 1-element
+// `countries` array (M3U country is usually empty).
+export function applyEnrichment(channels: Channel[], map: EnrichmentMap): Channel[] {
+  return channels.map((c) => {
+    const e = map[c.id];
+    if (!e) return c;
+    return {
+      ...c,
+      category: e.category ?? c.category,
+      countries: e.country ? [e.country] : c.countries,
+      logo: e.logo ?? c.logo,
+      quality: e.quality ?? c.quality,
+    };
+  });
 }
