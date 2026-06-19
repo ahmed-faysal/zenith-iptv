@@ -34,6 +34,33 @@ describe("bestLogo", () => {
   });
 });
 
+import { applyEnrichment } from "@/lib/enrich";
+import type { Channel } from "@/lib/types";
+
+const chan = (o: Partial<Channel>): Channel => ({
+  id: "CNN.us@HD", name: "CNN", logo: "m3u-logo", streamUrl: "u",
+  category: "Other", languages: [], countries: [], quality: null, ...o,
+});
+
+describe("applyEnrichment", () => {
+  it("overrides logo/category/country/quality when enrichment has them", () => {
+    const out = applyEnrichment([chan({})], {
+      "CNN.us@HD": { category: "News", country: "US", logo: "good.svg", quality: "1080p" },
+    });
+    expect(out[0]).toMatchObject({
+      category: "News", countries: ["US"], logo: "good.svg", quality: "1080p",
+    });
+  });
+  it("keeps M3U values when the id is absent from the map", () => {
+    const out = applyEnrichment([chan({})], {});
+    expect(out[0]).toMatchObject({ logo: "m3u-logo", category: "Other", quality: null });
+  });
+  it("keeps M3U logo when enrichment entry omits logo", () => {
+    const out = applyEnrichment([chan({})], { "CNN.us@HD": { category: "News" } });
+    expect(out[0].logo).toBe("m3u-logo");
+  });
+});
+
 import { buildEnrichment, type RawChannel, type RawStream } from "@/lib/enrich";
 
 describe("buildEnrichment", () => {
