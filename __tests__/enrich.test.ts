@@ -33,3 +33,33 @@ describe("bestLogo", () => {
     expect(r).toBe("feed");
   });
 });
+
+import { buildEnrichment, type RawChannel, type RawStream } from "@/lib/enrich";
+
+describe("buildEnrichment", () => {
+  const channels: RawChannel[] = [
+    { id: "CNN.us", country: "US", categories: ["news"] },
+  ];
+  const logos: RawLogo[] = [
+    { channel: "CNN.us", feed: null, in_use: true, tags: [], width: 300, height: 200, format: "SVG", url: "cnn.svg" },
+  ];
+  const streams: RawStream[] = [
+    { channel: "CNN.us", feed: "HD", quality: "1080p" },
+  ];
+
+  it("joins metadata onto the M3U id (channel@feed)", () => {
+    const map = buildEnrichment(["CNN.us@HD"], channels, logos, streams);
+    expect(map["CNN.us@HD"]).toEqual({
+      category: "News", country: "US", logo: "cnn.svg", quality: "1080p",
+    });
+  });
+  it("matches quality by channel AND feed", () => {
+    const map = buildEnrichment(["CNN.us@SD"], channels, logos, streams);
+    expect(map["CNN.us@SD"].quality).toBeUndefined(); // no SD stream
+    expect(map["CNN.us@SD"].country).toBe("US");      // metadata still joins
+  });
+  it("omits ids with no matching channel entirely", () => {
+    const map = buildEnrichment(["Unknown.zz"], channels, logos, streams);
+    expect(map["Unknown.zz"]).toBeUndefined();
+  });
+});
