@@ -37,4 +37,8 @@ describe("ChannelCard", () => {
     // card still renders its name
     expect(screen.getByText("Channel A")).toBeInTheDocument();
   });
+  it("prefers channel.quality over the name-parsed quality on the chip", () => {
+    render(<ChannelCard channel={{ ...ch, name: "Channel A", quality: "480p" }} onSelect={() => {}} />);
+    expect(screen.getByText("480p")).toBeInTheDocument();
+  });
 });

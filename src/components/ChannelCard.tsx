@@ -10,7 +10,8 @@ export function ChannelCard({
   channel, onSelect,
 }: { channel: Channel; onSelect: (c: Channel) => void }) {
   const [broken, setBroken] = useState(false);
-  const { title, quality, flags } = parseChannelName(channel.name);
+  const { title, quality: parsedQuality, flags } = parseChannelName(channel.name);
+  const quality = channel.quality ?? parsedQuality;
 
   return (
     <button
