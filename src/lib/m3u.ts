@@ -43,6 +43,7 @@ export function parseM3U(text: string): Channel[] {
       category: toAppCategory(group ? group.split(";") : []),
       languages,
       countries,
+      quality: null,
     });
   }
   return channels;

@@ -6,6 +6,7 @@ export type Channel = {
   category: string;
   languages: string[];
   countries: string[];
+  quality?: string | null;
 };
 
 export type Prefs = {

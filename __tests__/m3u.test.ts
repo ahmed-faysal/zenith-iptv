@@ -60,4 +60,8 @@ http://x/b.m3u8
     expect(ch[1].id).not.toBe("");
     expect(ch[0].id).not.toBe(ch[1].id);
   });
+  it("sets quality to null on freshly parsed channels", () => {
+    const m3u = `#EXTM3U\n#EXTINF:-1 tvg-id="CNN.us",CNN\nhttp://x/cnn.m3u8`;
+    expect(parseM3U(m3u)[0].quality).toBeNull();
+  });
 });
