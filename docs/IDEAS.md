@@ -19,6 +19,9 @@ actually is, and Vercel serverless. Last verified **2026-06-20**.
   logo, stream quality, via build-time `gen-channels.ts` → `enrichment.json`
   (Tier 2). Covers the old backlog #21/#23/#25, and #17/#18 (format/logo) and
   #16-data are subsumed here.
+- **#26 fatal-error recovery** — `planRecovery()` + VideoPlayer: network→startLoad,
+  media→recoverMediaError (≤2 each), reset on successful playback/channel change;
+  fewer instant "Stream unavailable" dead-ends.
 
 ---
 
@@ -26,23 +29,18 @@ actually is, and Vercel serverless. Last verified **2026-06-20**.
 
 Ranked by value/effort.
 
-1. **#26 — Fatal-error recovery by type.** Today [VideoPlayer.tsx](../src/components/VideoPlayer.tsx)
-   gives up on *any* fatal hls.js error. Confirmed `recoverMediaError`/`startLoad`
-   exist in hls.js 1.6.16: recover media-decode errors (debounced), retry some
-   network stalls, only destroy as last resort. **Highest value** — directly
-   reduces "Stream unavailable" dead-ends on both targets.
-2. **#19 — alt_names search.** 2,725/9,183 channels carry local-language names /
+1. **#19 — alt_names search.** 2,725/9,183 channels carry local-language names /
    abbreviations. Indexing them lets search find channels by their real name.
    Cost: ship `altNames` in the payload (or fold into the enrichment artifact).
-3. **#10 — "Most Watched" sort.** Build from the existing `pushRecent()` history
+2. **#10 — "Most Watched" sort.** Build from the existing `pushRecent()` history
    in [storage.ts](../src/lib/storage.ts). Fully local, no new data.
-4. **#30 — Signal-quality indicator.** Poll `hls.bandwidthEstimate` (confirmed in
+3. **#30 — Signal-quality indicator.** Poll `hls.bandwidthEstimate` (confirmed in
    1.6.16) for a small connection chip in the player overlay. No extra fetches.
-5. **#8 — Number-key channel jump.** Keys 0–9 select by index on the remote;
+4. **#8 — Number-key channel jump.** Keys 0–9 select by index on the remote;
    wire into [keys.ts](../src/lib/keys.ts). Small UX win.
-6. **#16 — Hide dead channels.** Only **45** channels carry a `closed` date — low
+5. **#16 — Hide dead channels.** Only **45** channels carry a `closed` date — low
    value but a cheap one-line filter in the enrichment merge. Optional.
-7. **#25 — "Featured" row from Free-TV curated list.** Free-TV/IPTV (1,895
+6. **#25 — "Featured" row from Free-TV curated list.** Free-TV/IPTV (1,895
    hand-curated HD channels) as an optional high-quality Featured row. Optional.
 
 ---
@@ -106,6 +104,6 @@ The full EPG pipeline is merged to `main` but inert until `EPG_GUIDE_URL` is set
 
 ## Suggested order
 
-1. **#26 error recovery** (best in-browser win) → 2. **#19 alt_names search** →
-3. **#10 Most Watched** → then **deploy (#11)** to light up EPG and test on the
-LG. #30/#8/#16/#25 are nice-to-haves to fold in opportunistically.
+**#26 error recovery is shipped.** Next: 1. **#19 alt_names search** → 2. **#10
+Most Watched** → then **deploy (#11)** to light up EPG and test on the LG.
+#30/#8/#16/#25 are nice-to-haves to fold in opportunistically.
