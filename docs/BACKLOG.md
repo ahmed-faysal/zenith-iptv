@@ -1,347 +1,107 @@
-# Live TV — Backlog & Known Issues
+# Zenith — Backlog & Known Issues
 
-Single source of truth for outstanding work. Tackle top-down: Critical → Important
-→ Minor → Future. Check items off as they ship. Each item links to the relevant
-code and states the recommended fix.
+Single source of truth for outstanding work. The long changelog of shipped fixes
+that used to live here is now in git history (`git log`). This file tracks only
+what's **still open** plus the research worth keeping.
 
-Source review: post-merge holistic review on 2026-06-17.
-
----
-
-## ✅ Fixed during local testing (2026-06-17)
-
-- [x] **Duplicate React keys / duplicate & hidden channels.** The console flagged
-  repeated keys (e.g. `576p`, `21-jump-street`). Two root causes in
-  [m3u.ts](../src/lib/m3u.ts): (1) `slug()` kept only ASCII, so non-Latin (CJK)
-  names collapsed to a stray quality tag or empty string — now Unicode-aware
-  (`\p{L}\p{N}`), recovering ~200 distinct channels; (2) iptv-org lists some
-  channels multiple times — `parseM3U` now de-dupes by id (keeps first). Verified
-  against the live feed: 10,985 channels, zero duplicate ids. Covered by
-  `__tests__/m3u.test.ts`.
+Last reviewed: 2026-06-21 (holistic review — unified browse views, fixed category
+grid D-pad nav, removed dead ChannelSidebar, refreshed docs).
 
 ---
 
-## 🔴 Critical — broken features (fix first)
+## ✅ Current state
 
-- [x] **27. Back button does nothing on LG webOS (keyCode 461 not handled).** ✅ 2026-06-17
-  - webOS fires the Magic Remote Back button as `keyCode 461` (`0x1CD`), not
-    `"Escape"`. The old Back handlers only checked `"Escape"`/`"Backspace"`.
-  - **Done:** new shared [keys.ts](../src/lib/keys.ts) `isBackKey(e)` matches
-    `Escape`, `GoBack`, and `keyCode 461`; wired into
-    [SearchView](../src/components/SearchView.tsx), [WatchView](../src/components/WatchView.tsx),
-    [SettingsPanel](../src/components/SettingsPanel.tsx), and
-    [ChannelSidebar](../src/components/ChannelSidebar.tsx). Covered by
-    `__tests__/keys.test.ts`.
-
-- [x] **28. Player controls now D-pad reachable; favorite no longer needs an
-  `F` key.** ✅ 2026-06-17
-  - **Done:** new [ControlBar](../src/components/ControlBar.tsx) — a `data-row`
-    with focusable **★ Favorite** and **☰ Channels** buttons (activate on OK/Enter)
-    — overlays the Player. [WatchView](../src/components/WatchView.tsx) now runs
-    `useGridFocus`, so the control strip gets initial focus and ArrowDown reaches
-    the quality picker. The `F`-key and the global ArrowLeft/Right sidebar toggle
-    are gone; the sidebar opens via the Channels button. Favorite is derived from
-    storage (no setState-in-effect). Covered by `__tests__/ControlBar.test.tsx`.
-  - Bonus fix: OK/Enter on action buttons fired both `onKeyDown` and the native
-    click (favorite would toggle twice) — handlers now `preventDefault()` the
-    duplicate click across ChannelCard/ControlBar/ChannelSidebar.
-
-- [x] **1. EPG "now playing" removed for v1 (data source 404'd).** ✅ 2026-06-17
-  - The old EPG URL `https://iptv-org.github.io/epg/guides/full.xml` returns **404**
-    (iptv-org no longer hosts a single pre-generated guide), so the feature only
-    ever rendered nothing. Removed the EPG plumbing and the now-playing UI:
-    deleted `/api/epg`, `src/lib/epg-source.ts`, `src/lib/epg.ts`, the
-    `EpgEntry`/`EpgProgramme` types, and the `epg.now` overlay in
-    [WatchView.tsx](../src/components/WatchView.tsx). Also resolves #10.
-  - Reviving EPG properly is parked as a future improvement — see **#26**.
-
-- [x] **2. Vertical D-pad nav between rows.** ✅ 2026-06-17
-  - Added [useGridFocus.ts](../src/hooks/useGridFocus.ts), a container-level hook on
-    [HomeView](../src/components/HomeView.tsx) that treats the rows as a grid:
-    ArrowDown/ArrowUp move focus to the **same column index** in the adjacent row
-    (clamped to that row's length). Each [CategoryRow](../src/components/CategoryRow.tsx)
-    is marked `data-row` and keeps its existing horizontal `useFocusNav` (different
-    keys, no conflict). Covered by `__tests__/useGridFocus.test.tsx`.
-
-- [x] **3. Initial focus on load.** ✅ 2026-06-17
-  - `useGridFocus` focuses the first card as soon as channels render (the `ready`
-    flag), so a remote-only TV has a starting point.
-    [ChannelSidebar](../src/components/ChannelSidebar.tsx) now focuses its first
-    item when it opens. Covered by `useGridFocus.test.tsx` and
-    `__tests__/ChannelSidebar.test.tsx`.
+- **Browse** — one `BrowseView({ category })` drives both `/` (rows) and
+  `/category/[slug]` (vertical grid). Categories are real routes, so Back from
+  the player returns to the page you came from.
+- **Remote nav** — `useGridFocus` (row-to-row, column-preserving) + `useGridNav`
+  (2-axis nav over the category grid) + `useFocusNav` (within a row). Initial
+  focus on every screen; webOS Back (keyCode 461) handled.
+- **Player** — glassy auto-hiding overlay: Back, LIVE, name, quality picker,
+  clock, center play/pause, favorite, volume/mute, fullscreen. No scrubber (live).
+- **Data** — iptv-org M3U behind `/api/channels`, merged with a build-time
+  `enrichment.json` (canonical category, reliable country, best logo, quality).
+  See [enrichment spec](superpowers/specs/2026-06-19-channels-json-enrichment-design.md).
+- **Tests** — 150 passing; lint + production build clean.
 
 ---
 
-## 🟡 Important — performance & reachability
+## 🧭 Pending (need account/device or a running pipeline)
 
-- [x] **35. Player overlay polish — auto-hide, collapse quality, de-dupe.** ✅ 2026-06-18
-  - Feedback from a real screenshot: the overlay never hid, and **quality + LIVE
-    were each shown twice** (a top quality pill *and* an always-on `Auto 288p…`
-    row; a top LIVE badge *and* a bottom one).
-  - **Done:** the overlay now **auto-hides after ~3.5s idle** with a graceful
-    fade ([WatchView](../src/components/WatchView.tsx)) — stays shown while paused
-    or while the sidebar is open; any activity reveals it, and the first key while
-    hidden is swallowed (reveals without triggering a control). D-pad grid nav is
-    suspended while hidden. **Quality** collapsed into one button that opens an
-    options popover ([PlayerOverlay](../src/components/PlayerOverlay.tsx)); the
-    always-visible row and the duplicate **LIVE** indicator are gone. Covered by
-    updated `PlayerOverlay.test.tsx`.
-  - Note: the large on-screen text some channels show (e.g. a programme title) is
-    the **broadcaster's own graphics/captions in the video**, not our overlay.
-
-- [x] **34. Player UI redesign — glassy streaming-player overlay.** ✅ 2026-06-18
-  - Reworked the player chrome to match a modern streaming-player look (from a v0
-    mockup) while staying honest for live, no-DVR streams. New
-    [PlayerOverlay](../src/components/PlayerOverlay.tsx): a **top bar** (Back, LIVE
-    badge, channel name + category, `HD · <res>` quality pill, live
-    [Clock](../src/components/Clock.tsx)), a **center play/pause**, and a **bottom
-    row** (favorite, channels, volume slider + mute, fullscreen) plus a **● LIVE**
-    indicator. Each band is a `data-row` so `useGridFocus` walks between them.
-  - **Deliberately omitted** the mockup's scrubber / ±30s / skip (no live seek),
-    viewer count (no data), and cast (not implemented) — they'd be dead controls.
-  - **New dual-target controls:** volume slider + mute (real in browser; TVs use
-    the hardware remote) and fullscreen (real `requestFullscreen` in browser).
-  - HLS level state lifted from VideoPlayer into [WatchView](../src/components/WatchView.tsx)
-    so the quality pill + picker share one source of truth;
-    [VideoPlayer](../src/components/VideoPlayer.tsx) is now a pure playback surface
-    driven by `paused`/`volume`/`muted`/`currentLevel` props. The old `ControlBar`
-    is replaced. Covered by `player.test.ts` and `PlayerOverlay.test.tsx`.
-
-- [x] **33. Player media controls (play/pause + remote transport keys).** ✅ 2026-06-17
-  - The player had no transport controls and ignored the remote's hardware media
-    buttons entirely. **Done:** [ControlBar](../src/components/ControlBar.tsx) now
-    leads with a focusable **Play/Pause** button (also the player's initial focus);
-    [VideoPlayer](../src/components/VideoPlayer.tsx) takes a `paused` prop and
-    applies it (resume lets hls.js catch back up to the live edge). New
-    [keys.ts](../src/lib/keys.ts) `mediaAction()` maps the remote's Play (415),
-    Pause (19), Play/Pause (10252/179) and Stop (413) keys — handled in
-    [WatchView](../src/components/WatchView.tsx) (Stop → Home). Switching channels
-    resumes playback. Seek/FF/RW deliberately omitted — not meaningful for live
-    (see catchup, #15). Covered by `keys.test.ts` and `ControlBar.test.tsx`.
-
-- [x] **29. Modals close on Back/Escape and restore focus.** ✅ 2026-06-17
-  - **Done:** [SettingsPanel](../src/components/SettingsPanel.tsx) now closes on
-    Back (window `isBackKey` listener) and restores focus to its opener on
-    unmount. [ChannelSidebar](../src/components/ChannelSidebar.tsx) closes on Back
-    (with `stopPropagation` so it doesn't also fire the Player's Home navigation)
-    and captures/restores opener focus on open/close. The Player's Back also
-    closes the sidebar first, then returns Home. Covered by updated
-    `SettingsPanel.test.tsx` and `ChannelSidebar.test.tsx`.
-
-- [x] **30. Focus is now unmistakable on native form controls.** ✅ 2026-06-17
-  - **Done:** added a global rule in [globals.css](../src/app/globals.css) —
-    `[data-focusable]:focus` / `:focus-visible` paint a high-contrast 3px white
-    outline (and a softer outline on `:hover` for Magic Remote pointer mode).
-    Checkboxes are enlarged to 22px with `accent-color`, so the focused checkbox
-    row, Save/Cancel buttons, and quality options are legible from a sofa.
-    `-webkit-` prefix kept for older webOS Chromium.
-
-- [x] **4. Cap big category rows.** ✅ 2026-06-17
-  - [CategoryRow](../src/components/CategoryRow.tsx) takes an optional `limit`;
-    [HomeView](../src/components/HomeView.tsx) caps each category row at 40 cards
-    (`ROW_LIMIT`) so the ~5.8k "Other" / ~3.5k Entertainment lists no longer paint
-    thousands of DOM nodes. Favorites/Continue Watching stay uncapped (small); the
-    long tail lives in Search. Covered by `__tests__/CategoryRow.test.tsx`.
-    (Virtualization remains an option if 40 ever feels limiting.)
-
-- [x] **5. Search reachable — and fully remote-navigable.** ✅ 2026-06-17
-  - New [TopBar](../src/components/TopBar.tsx) with focusable **Search** + Settings
-    buttons, rendered as a `data-row` so the remote reaches it via the grid nav.
-    Search routes to `/search`. Bonus: Settings is now remote-reachable too (it
-    was previously a non-focusable button). Covered by `__tests__/TopBar.test.tsx`.
-  - Review follow-up (2026-06-17): the search page itself is now remote-complete —
-    [SearchView](../src/components/SearchView.tsx) bridges input↕results (ArrowDown
-    into results, ArrowUp back to the box) and Back/Escape returns Home (Backspace
-    still edits the query while typing). Closes the dead-end the TopBar link
-    exposed.
-
-- [x] **6. Channel payload fetched once per session.** ✅ 2026-06-17
-  - New [channels-client.ts](../src/lib/channels-client.ts) holds a session-wide
-    promise cache (`loadChannels`); a rejected fetch is dropped so a transient
-    failure can retry. The
-    thin [useChannels](../src/hooks/useChannels.ts) hook exposes it, and Home,
-    Watch, and Search now all read through it instead of each `fetch`-ing the full
-    2.67 MB list. Cache behavior covered by `__tests__/channels-client.test.ts`.
-
----
-
-## 🟢 Minor — polish
-
-- [x] **31. QualitySelector is now a real focusable row; pointer hover cue added.**
-  ✅ 2026-06-17
-  - **Done:** [QualitySelector](../src/components/QualitySelector.tsx) is a
-    `data-row` with `useFocusNav` and `data-focusable` buttons (reachable via the
-    Player grid nav from #28); the global `:hover` outline from #30 gives Magic
-    Remote pointer-mode users feedback before clicking. Covered by updated
-    `QualitySelector.test.tsx`.
-
-- [ ] **32. OLED burn-in: static bright chrome in fixed positions.** The `Live TV`
-  `<h1>`, row titles, and [TopBar](../src/components/TopBar.tsx) buttons sit in the
-  exact same screen position every session. On the target LG C3 OLED this is a
-  (low) burn-in risk. Low urgency — the dark theme already mitigates it, and the
-  new Player [ControlBar](../src/components/ControlBar.tsx) uses translucent dark
-  backgrounds per the guideline. Remaining: keep Home chrome low-luminance and
-  avoid bright fixed badges/logos; revisit if an always-on HUD is added. Left open
-  as a design watch-item, not a discrete fix.
-
-- [x] **7. Broken logos fall back to the placeholder.** ✅ 2026-06-17
-  - [ChannelCard.tsx](../src/components/ChannelCard.tsx) now tracks a `broken`
-    state and renders the placeholder `<div>` when `logo` is empty **or** the
-    `<img>` fires `onError` (many iptv-org logos are dead). Covered by
-    `__tests__/ChannelCard.test.tsx`.
-
-- [x] **8. Settings uses pick-lists, not typed strings.** ✅ 2026-06-17
-  - [SettingsPanel.tsx](../src/components/SettingsPanel.tsx) now renders focusable
-    checkbox pick-lists for languages/countries, pre-checked from saved prefs — no
-    typing needed on a remote. The panel has vertical `useFocusNav` and focuses its
-    first control on open. Covered by `__tests__/SettingsPanel.test.tsx`.
-  - Review follow-ups (2026-06-17): (a) the lists are the **most-common 24** values
-    by channel count (frequency-sorted via [topValues](../src/lib/filters.ts),
-    `__tests__/filters.test.ts`) so they stay short enough to reach **Save** with a
-    remote; (b) checkboxes now toggle on **Enter** as well as Space, since a TV
-    remote's OK button sends Enter — without this, filters couldn't be changed by
-    remote at all.
-
-- [x] **9. Test-only cache-reset exports removed (factory pattern).** ✅ 2026-06-17
-  - [source.ts](../src/lib/source.ts) and [channels-client.ts](../src/lib/channels-client.ts)
-    now expose `createChannelSource` / `createChannelLoader` factories (each owns a
-    private cache) plus a production singleton (`getChannels` / `loadChannels`).
-    Tests construct an isolated instance per case, so the `__resetCache` /
-    `__resetChannelsCache` hooks are gone from the app modules.
-
-- [x] **10. "Now playing" dead branch removed.** ✅ 2026-06-17
-  - Removed the unused `channel.nowPlaying` render in
-    [ChannelCard.tsx](../src/components/ChannelCard.tsx) and the `nowPlaying` field
-    on the `Channel` type (it was never populated). Done alongside #1.
-
----
-
-## 🚀 Data-source upgrade (iptv-org/api) — investigated 2026-06-17
-
-The `iptv-org/api` repo serves structured JSON on a CDN (no key) that is richer
-than the raw M3U we currently parse. All of the below sit behind the existing
-`/api/channels` seam, so the frontend barely changes. Endpoints:
-`https://iptv-org.github.io/api/{channels,streams,guides,logos,categories,blocklist}.json`.
-
-- [x] **21. Channel enrichment from `channels.json`/`logos.json`/`streams.json`.** ✅ 2026-06-19
-  - Shipped as **hybrid enrich** (not full replace): `index.m3u` stays the runtime
-    spine; a build-time generator ([scripts/gen-channels.ts](../scripts/gen-channels.ts))
-    joins the JSON APIs into a slim [enrichment.json](../src/data/enrichment.json)
-    keyed by our `channel@feed` id, merged in [source.ts](../src/lib/source.ts) via
-    [enrich.ts](../src/lib/enrich.ts). Adds canonical categories, reliable country,
-    best logo, and quality. Spec: [2026-06-19-channels-json-enrichment-design.md](superpowers/specs/2026-06-19-channels-json-enrichment-design.md).
-    Avoids request-time cost (no Vercel cold-start hit). Subsumes #17 (format) and #18 (logos).
-
-- [ ] ~~**22. Family-safety filter.**~~ ❌ **Rejected 2026-06-20 (verified).**
-  - `index.m3u` contains **0** `is_nsfw` channels — iptv-org already excludes adult
-    content from the public playlist. The filter would match nothing. (A standalone
-    NSFW toggle was also rejected: iptv-org publishes no adult *streams* — 373 flagged
-    channels, only 3 incidental streams.) See [IDEAS.md](IDEAS.md) Rejected table.
-
-- [x] **23. Better logos via `logos.json`.** ✅ 2026-06-19
-  - Done in #21: `bestLogo()` picks the best per channel (in-use → format
-    SVG/WebP/PNG → size → feed-specific). 9,016/9,183 channels covered.
-
-- [ ] ~~**24. Send stream headers to reduce dead streams.**~~ ❌ **Rejected 2026-06-20 (verified).**
-  - `User-Agent`/`Referer` are browser **forbidden headers** — JS (incl. hls.js
-    `xhrSetup`) cannot set them on our browser/webOS target; only a server proxy
-    (#4-parked) could. Only ~6% of streams carry them anyway. See [IDEAS.md](IDEAS.md).
-
-- [x] **25. Quality metadata from `streams.json`.** ✅ 2026-06-19
-  - Done in #21: per-stream `quality` carried in the enrichment artifact; the
-    ChannelCard chip prefers it over the name-parsed value.
-
-> Full, verified triage of all research ideas (viable / parked / rejected with
-> reasons) lives in **[IDEAS.md](IDEAS.md)** — the single source for what's worth
-> building next. Top in-browser picks: error-recovery-by-type, alt_names search,
-> Most Watched.
-
----
-
-## 🧭 Pending deploy steps (need your account/device)
-
-- [ ] **11. Deploy to Vercel.** Run `npx vercel --prod` from the project root
-  (logs into your Vercel account); copy the production URL.
-- [ ] **12. Set the TV app URL.** Paste the Vercel URL into
-  [webos/appinfo.json](../webos/appinfo.json) (`main` field).
-- [ ] **13. Install on the LG TV.** Follow [webos/README.md](../webos/README.md):
+- [ ] **Redeploy to Vercel.** Initial deploy is live (`zenith-iptv.vercel.app`,
+  set as `main` in [webos/appinfo.json](../webos/appinfo.json)); push the latest
+  `main` so the deploy reflects current commits (`git push` triggers it, or
+  `npx vercel --prod`).
+- [ ] **Install on the LG TV.** Follow [webos/README.md](../webos/README.md):
   add placeholder icons, `ares-package webos/`, install the `.ipk` via the
   Homebrew Channel.
+- [~] **Activate EPG ("now / next").** The plumbing exists (`/api/epg`, `useEpg`,
+  "Now · …" subtitle in the player) and a scheduled build is wired in
+  [`.github/workflows/epg.yml`](../.github/workflows/epg.yml). It stays dormant
+  until the Action publishes a `guide.xml.gz` to the `epg` branch and
+  `EPG_GUIDE_URL` is set in Vercel. **Open tuning:** the grabber is slow/OOM-prone
+  against all channels — scope `EPG_COUNTRIES` (e.g. `US,GB,CA,AU,IN,AE`) to keep
+  the run small. Background + source research in the EPG section below.
 
 ---
 
-## 🔮 Future ideas (already parked in the spec)
+## 🟢 Open watch-items
 
-See [Future Considerations](superpowers/specs/2026-06-16-personal-live-tv-design.md)
-for full notes. Summary:
+- [ ] **OLED burn-in (LG C3).** Row titles and the TopBar sit in the same screen
+  position every session. Low risk (dark theme mitigates), but keep home chrome
+  low-luminance and avoid bright fixed badges/logos; revisit if an always-on HUD
+  is added.
+- [ ] **Geo-blocked channels.** Some streams are region-locked; the card shows a
+  "Geo-blocked" flag. No in-app fix is possible (a browser can't change its IP) —
+  a VPN is the only workaround. Documented here so it isn't re-investigated.
 
-- [ ] **14. App icon / logo** — hand-crafted SVG → PNG sizes for webOS + favicon.
-- [ ] **15. Catchup / TV-archive** — parse `catchup` / `catchup-source` from
-  `#EXTINF` to rewind live programming where supported.
-- [ ] **16. PWA install** — manifest + service worker for clean phone install.
-- [ ] **17. Multi-source playlist merge** — combine/curate multiple M3U sources
-  behind the existing `/api/channels` seam.
-- [ ] **18. Reference parsers** — read IPTVnator / Wizju for `#EXTINF` edge cases
-  our parser may miss.
-- [ ] **19. Multi-view** — watch several channels at once (cut from v1).
-- [ ] **20. Cloudflare Pages migration** — only if the app ever goes
-  commercial/public (Vercel free tier prohibits commercial use).
+---
 
-- [~] **26. Revive EPG ("now / next" program guide).** **Merged to `main`**
-  (spec: [2026-06-18-epg-revival.md](superpowers/specs/2026-06-18-epg-revival.md)).
-  Slim guide pre-built in CI (`.github/workflows/epg.yml` + `scripts/build-epg-channels.ts`),
-  served by `/api/epg`, shown as "Now · …" in WatchView. **Dormant until** a repo
-  remote exists, the Action publishes the `epg` branch once, and `EPG_GUIDE_URL`
-  is set (i.e. gated on deploy #11). EPG enhancements (#5/#6/#32–#39 in
-  [IDEAS.md](IDEAS.md)) apply once it's active. Verified coverage: ~3,605 mapped channels once ids are matched on the
-  **base xmltv_id** (our ids carry an `@feed` suffix; the naive join gave ~1).
-  Country scoping is inert until the channels.json upgrade (#21) adds country data.
-  Removed in v1 (#1) because the old feed 404'd; the old fetch-whole-file-on-demand
-  design can't work:
-  - **Sources investigated (2026-06-17):**
-    - `iptv-epg.org` — real XMLTV, free, no key, same `tvg-id` convention we
-      match on. **But** per-country files are huge (US alone = **504 MB**,
-      ~1.08M programmes, hashed redirect URL). Fetching + parsing on demand would
-      OOM/timeout a Vercel function; `.gz` transfers smaller but still
-      decompresses to 504 MB. **Not viable on demand.**
-    - `github.com/iptv-org/epg` — the official tool is a **generator you run**
-      (npm/Docker) against a channel list to produce a slim XMLTV for only your
-      channels. `guides.json` (see the data-source section) maps each channel to
-      its EPG site — the missing input for this build.
-  - **Approach (pick one):**
-    - (a) **Self-hosted slim EPG (proper fix):** a scheduled GitHub Action/cron
-      runs the iptv-org/epg generator (or pre-filters an iptv-epg.org country
-      file) against our channel list, producing a small XMLTV we host; a new
-      `/api/epg` reads that slim file. Real mini-feature — needs its own spec.
-    - (b) **Per-channel EPG API (research first):** if a service like `epg.pw`
-      returns one channel's guide in a small response, that fits an on-demand
-      model with minimal change. Verify availability/format before committing.
-  - **Follow-up research (2026-06-18) — option (b) ruled out, (a) confirmed:**
-    - **No free, no-key, per-channel JSON EPG API exists** that keys on our
-      `tvg-id`s. Checked: `epg.pw` serves **bulk only** (all / `epg_lite` /
-      per-country XMLTV — no single-channel endpoint, no JSON); `epg.best`
-      (iptv-epg) has a REST/JSON API but requires **OAuth2** (key);
-      `Tvheadend`'s "mode=now" JSON API is a **self-hosted PVR server** that
-      itself needs EPG fed in (circular); `TVmaze` is free JSON but **show
-      metadata, not linear now/next** and won't map to arbitrary IPTV channels.
-      → On-demand per-channel fetch is not achievable from free sources.
-    - **`github.com/iptv-org/epg` is generator-only (confirmed current):** run
-      via npm/Docker, **no hosted feed**. Its `--channels <custom.xml>` flag is
-      purpose-built to scope output to *only our channels*, producing a single
-      slim `guide.xml` (`--gzip`, `--json` variants). `GUIDES.md` lists a few
-      tiny community-hosted servers (e.g. 2-channel render.com workers) — not
-      usable. Channel→site mapping for the custom XML comes from the API's
-      `guides.json` (see data-source section).
-  - **Recommended design (option a):** a scheduled **GitHub Action** (cron,
-    ~6–12h) builds a `<channel site site_id xmltv_id>` list from `guides.json`
-    filtered to the channels we surface (scope by enabled country/category to
-    keep it small — most of the 40k channels have no guide anyway), runs the
-    iptv-org/epg grabber against it, and publishes a slim `guide.xml(.gz)` +
-    JSON (committed to an `epg` branch / release asset / gh-pages). A new
-    `/api/epg` fetches that small file, parses XMLTV → a `now/next` map keyed by
-    `tvg-id`, and caches server-side (~1h). It's a self-contained mini-feature
-    (CI job + channels-builder script + XMLTV parser + `/api/epg`) — **needs its
-    own spec before building.**
-  - When revived, re-add the `epg.now` overlay in
-    [WatchView.tsx](../src/components/WatchView.tsx); optionally re-introduce
-    `nowPlaying` on cards (#10) only if EPG is joined into the channel list.
+## 🔮 Future ideas
+
+Full, verified triage (viable / parked / rejected with reasons) lives in
+**[IDEAS.md](IDEAS.md)** — the single source for what's worth building next. Top
+in-browser picks: error-recovery-by-type, alt_names search, Most Watched.
+
+Parked from the original spec
+([design](superpowers/specs/2026-06-16-personal-live-tv-design.md)):
+
+- [ ] **App icon / logo** — hand-crafted SVG → PNG sizes for webOS + favicon.
+- [ ] **Catchup / TV-archive** — parse `catchup` / `catchup-source` from `#EXTINF`
+  to rewind live programming where supported.
+- [ ] **PWA install** — manifest + service worker for clean phone install.
+- [ ] **Multi-source playlist merge** — combine/curate multiple M3U sources behind
+  the existing `/api/channels` seam.
+- [ ] **Multi-view** — watch several channels at once (cut from v1).
+- [ ] **Cloudflare Pages migration** — only if the app ever goes commercial/public
+  (Vercel free tier prohibits commercial use).
+
+**Rejected after verification** (don't re-open): family-safety / NSFW filter
+(iptv-org's public playlist already excludes adult content — 0 matching channels);
+sending `User-Agent`/`Referer` stream headers (browser-forbidden headers, only a
+server proxy could set them). Details in [IDEAS.md](IDEAS.md).
+
+---
+
+## 📺 EPG research (kept for when it's activated)
+
+Why the obvious approaches don't work, so they aren't re-investigated:
+
+- **On-demand per-channel EPG is not achievable from free sources.** No free,
+  no-key, per-channel JSON API keys on our `tvg-id`s: `epg.pw` is bulk-only
+  (per-country XMLTV, no single-channel/JSON), `epg.best` needs OAuth2, Tvheadend
+  is a self-hosted PVR that itself needs EPG fed in, TVmaze is show metadata not
+  linear now/next.
+- **Pre-generated whole-country guides are too big to fetch on demand** (US alone
+  ≈ 504 MB XMLTV; OOMs/timeouts a serverless function even gzipped).
+- **`iptv-org/epg` is a generator you run**, not a hosted feed. Its
+  `--channels <custom.xml>` flag scopes output to only our channels, producing a
+  small `guide.xml(.gz)`. The channel→site mapping comes from the API's
+  `guides.json`.
+
+**Chosen design (implemented, dormant):** a scheduled GitHub Action builds a
+`<channel>` list from `guides.json` filtered to our channels, runs the iptv-org/epg
+grabber, and publishes a slim `guide.xml.gz` to an `epg` branch; `/api/epg` fetches
+and parses it into a `now/next` map keyed on the **base `xmltv_id`** (our ids carry
+an `@feed` suffix — the naive join matched ~1 channel; the base-id join maps
+~3,605). Spec: [2026-06-18-epg-revival.md](superpowers/specs/2026-06-18-epg-revival.md).

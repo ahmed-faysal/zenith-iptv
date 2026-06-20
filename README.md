@@ -1,4 +1,4 @@
-# Live TV
+# Zenith
 
 A personal live-TV (IPTV) app for the browser and the living-room TV. It pulls a
 free channel list from [iptv-org](https://github.com/iptv-org/iptv), plays HLS
@@ -10,18 +10,25 @@ driven entirely by a TV remote's D-pad — no mouse or keyboard required.
 
 ## Features
 
-- **Home** — Favorites, Continue Watching, and per-category rows (News, Sports,
-  Entertainment, Music, Kids, Other), navigable as a grid with the D-pad.
-- **Player** — full-screen HLS playback with a glassy overlay that auto-hides
-  when idle: a top metadata bar (Back, LIVE badge, channel name, quality button,
-  clock), a center play/pause, and a bottom control row (favorite, channels,
-  volume/mute, fullscreen). Quality opens from a single button. No scrubber — the
-  streams are live.
-- **Search** — live name search over the full catalogue, fully remote-navigable.
-- **Settings** — filter the catalogue by language/country using checkbox
-  pick-lists (no typing needed on a remote).
-- **Remote-first** — initial focus on load, row-to-row D-pad navigation, and
-  Back/OK handling throughout.
+- **Home** (`/`) — Favorites, Continue Watching, and per-category rows (News,
+  Sports, Entertainment, Music, Kids, Other), navigable as a grid with the D-pad.
+  Each capped row has a **See all ›** link to its full category page.
+- **Category page** (`/category/<name>`) — a single category as a vertical,
+  wrapping grid (instead of one side-scrolling row), with a **Show more** button
+  to page through long lists. Reachable from the top-bar tabs or **See all ›**.
+- **Player** (`/watch/<id>`) — full-screen HLS playback with a glassy overlay
+  that auto-hides when idle: a top metadata bar (Back, LIVE badge, channel name,
+  quality button, clock), a center play/pause, and a bottom control row (favorite,
+  volume/mute, fullscreen). No scrubber — the streams are live. **Back** returns
+  to wherever you came from (history-aware), so leaving a channel opened from
+  Sports lands you back on the Sports page.
+- **Search** (`/search`) — live name search over the full catalogue, fully
+  remote-navigable.
+- **Settings** — slide-in sidebar to filter the catalogue by language/country
+  using checkbox pick-lists (no typing needed on a remote); countries show full
+  names.
+- **Remote-first** — initial focus on load, row-to-row and 2-axis grid D-pad
+  navigation, and Back/OK handling throughout.
 
 ## Tech stack
 
@@ -47,18 +54,18 @@ moment to populate.
 
 | Key | Action |
 | --- | --- |
-| Arrow keys | Move focus (D-pad) — within a row and between rows |
+| Arrow keys | Move focus (D-pad) — within a row, between rows, and across the category grid |
 | Enter | OK / select the focused item |
-| Backspace / Escape / Back | Back — closes the open panel, else returns Home (the LG remote's Back button, keyCode 461, is handled too) |
+| Backspace / Escape / Back | Back — closes the open panel, else goes back in history (the LG remote's Back button, keyCode 461, is handled too) |
 | ↓ / ↑ (Search) | Move between the search box and the results |
 
-In the **Player**, the overlay (Back, Play/Pause, Favorite ★, ☰ Channels,
-volume/mute, fullscreen, and the quality picker when a stream offers multiple
-renditions) is fully D-pad navigable — no mouse, pointer, or physical letter keys
-required. The remote's hardware **Play / Pause / Stop** buttons work too (Stop
-returns Home). The volume slider and fullscreen button are mainly for the desktop
-browser; on a TV the hardware remote handles volume and the app is already
-full-screen. Seeking is omitted since the streams are live.
+In the **Player**, the overlay (Back, Play/Pause, Favorite ★, volume/mute,
+fullscreen, and the quality picker when a stream offers multiple renditions) is
+fully D-pad navigable — no mouse, pointer, or physical letter keys required. The
+remote's hardware **Play / Pause / Stop** buttons work too. The volume slider and
+fullscreen button are mainly for the desktop browser; on a TV the hardware remote
+handles volume and the app is already full-screen. Seeking is omitted since the
+streams are live.
 
 ## Scripts
 
@@ -75,11 +82,15 @@ npm run lint     # eslint
 
 ```
 src/
-  app/                 # routes: / (Home), /search, /watch/[id], /api/channels
-  components/          # HomeView, WatchView, SearchView, player, rows, cards…
-  hooks/               # focus navigation + shared channel cache
-  lib/                 # M3U parsing, channel source, storage, filters, types
+  app/                 # routes: / (home), /category/[slug], /search,
+                       #         /watch/[id], /api/channels, /api/epg
+  components/          # BrowseView, CategoryPage/Row, ChannelCard, player, …
+  hooks/               # focus navigation (useGridFocus/useGridNav/useFocusNav)
+                       #   + shared channel cache
+  lib/                 # M3U parsing, channel source + enrichment, storage, types
+  data/                # build-time enrichment.json (categories/logos/quality)
 __tests__/             # unit tests (components, hooks, lib)
+scripts/               # enrichment + EPG channel-list generators
 webos/                 # LG webOS hosted-app wrapper + packaging notes
 docs/BACKLOG.md        # single source of truth for outstanding work
 ```
@@ -90,8 +101,7 @@ the data source later doesn't ripple into the UI.
 
 ## Status & roadmap
 
-The Critical, Important, and Minor work is complete. Remaining items — Vercel
-deploy, the LG TV install, the iptv-org/api data upgrade (incl. a family-safety
-filter), and reviving the program guide (EPG) — are tracked in
-[docs/BACKLOG.md](docs/BACKLOG.md). webOS packaging/install steps live in
-[webos/README.md](webos/README.md).
+Core app is complete and deployed to Vercel. Remaining items — the LG TV
+install and activating the program guide (EPG) once the scheduled build is
+running — are tracked in [docs/BACKLOG.md](docs/BACKLOG.md). webOS
+packaging/install steps live in [webos/README.md](webos/README.md).
