@@ -8,7 +8,7 @@ import { TopBar } from "./TopBar";
 import { useGridFocus } from "@/hooks/useGridFocus";
 import { useChannels } from "@/hooks/useChannels";
 import { topValues } from "@/lib/filters";
-import { getFavorites, getRecents, getPrefs, setLastChannel, pushRecent } from "@/lib/storage";
+import { getFavorites, getRecents, getPrefs, setLastChannel, pushRecent, removeRecent } from "@/lib/storage";
 
 const ORDER: AppCategory[] = ["News", "Sports", "Entertainment", "Music", "Kids", "Other"];
 const TABS = ["All", ...ORDER]; // app-bar category filter; "All" shows every row
@@ -20,6 +20,7 @@ export function HomeView() {
   const { channels, error } = useChannels();
   const [showSettings, setShowSettings] = useState(false);
   const [activeCat, setActiveCat] = useState<string>("All");
+  const [recentIds, setRecentIds] = useState<string[]>(() => getRecents());
   const mainRef = useRef<HTMLElement>(null);
 
   // Initial focus once channels are on screen; cross-row nav is suspended while
@@ -50,7 +51,7 @@ export function HomeView() {
 
   const byId = new Map(filtered.map((c) => [c.id, c]));
   const favorites = getFavorites().map((id) => byId.get(id)).filter(Boolean) as Channel[];
-  const recents = getRecents().map((id) => byId.get(id)).filter(Boolean) as Channel[];
+  const recents = recentIds.map((id) => byId.get(id)).filter(Boolean) as Channel[];
 
   // The active tab narrows what's shown: "All" keeps the full layout; a category
   // shows just that row, with Favorites/Continue-Watching filtered to match.
@@ -60,7 +61,13 @@ export function HomeView() {
   function open(c: Channel) {
     setLastChannel(c.id);
     pushRecent(c.id);
+    setRecentIds(getRecents());
     router.push(`/watch/${encodeURIComponent(c.id)}`);
+  }
+
+  function removeFromRecents(c: Channel) {
+    removeRecent(c.id);
+    setRecentIds(getRecents());
   }
 
   return (
@@ -80,7 +87,7 @@ export function HomeView() {
         />
       )}
       <CategoryRow title="Favorites" channels={favorites.filter(inCat)} onSelect={open} />
-      <CategoryRow title="Continue Watching" channels={recents.filter(inCat)} onSelect={open} />
+      <CategoryRow title="Continue Watching" channels={recents.filter(inCat)} onSelect={open} onRemove={removeFromRecents} />
       {shownCats.map((cat) => (
         <CategoryRow
           key={cat}

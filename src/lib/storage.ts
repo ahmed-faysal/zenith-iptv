@@ -31,6 +31,9 @@ export function pushRecent(id: string): void {
   const next = [id, ...getRecents().filter((x) => x !== id)].slice(0, 10);
   write(KEYS.recents, next);
 }
+export function removeRecent(id: string): void {
+  write(KEYS.recents, getRecents().filter((x) => x !== id));
+}
 
 export function getLastChannel(): string | null { return read<string | null>(KEYS.last, null); }
 export function setLastChannel(id: string): void { write(KEYS.last, id); }

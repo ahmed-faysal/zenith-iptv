@@ -201,6 +201,47 @@ input[type="checkbox"][data-focusable]:focus {
   }
 }
 
+/* ---- Remove-from-recents button -----------------------------------------
+   Sits at the top-right corner of a card in the Continue Watching row.
+   Hidden until the wrapper is hovered or the button itself is focused. */
+.card-wrap {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.card-remove {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.72);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease;
+  z-index: 2;
+}
+
+.card-wrap:hover .card-remove,
+.card-remove:focus {
+  opacity: 1;
+}
+
+.card-remove:hover,
+.card-remove:focus {
+  background: rgba(220, 50, 50, 0.9);
+  outline: none;
+}
+
 /* ---- App bar ------------------------------------------------------------
    Sticky, translucent, blurred chrome: brand on the left, scrollable category
    tabs in the middle, search/settings on the right. */
