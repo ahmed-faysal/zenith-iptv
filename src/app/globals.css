@@ -592,12 +592,10 @@ input[type="checkbox"][data-focusable]:focus {
 
 .cat-page__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(clamp(132px, 12vw, 208px), 1fr));
+  /* Fixed column width matching the horizontal-row card size so grid cards
+     look identical to their horizontal-row counterparts. */
+  grid-template-columns: repeat(auto-fill, clamp(132px, 12vw, 208px));
   gap: clamp(10px, 1.2vw, 18px);
-}
-
-.cat-page__grid .channel-card {
-  width: 100%;
 }
 
 .cat-page__more-wrap {

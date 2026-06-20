@@ -2,6 +2,7 @@
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Channel, AppCategory } from "@/lib/types";
+import { CategoryPage } from "./CategoryPage";
 import { CategoryRow } from "./CategoryRow";
 import { SettingsPanel } from "./SettingsPanel";
 import { TopBar } from "./TopBar";
@@ -12,10 +13,9 @@ import { getFavorites, getRecents, getPrefs, setLastChannel, pushRecent, removeR
 
 const ORDER: AppCategory[] = ["News", "Sports", "Entertainment", "Music", "Kids", "Other"];
 const TABS = ["All", ...ORDER];
-const ROW_LIMIT = 40;
 const FILTER_OPTIONS = 24;
 
-export function HomeView() {
+export function CategoryView({ category }: { category: AppCategory }) {
   const router = useRouter();
   const { channels, error } = useChannels();
   const [showSettings, setShowSettings] = useState(false);
@@ -47,6 +47,7 @@ export function HomeView() {
   const byId = new Map(filtered.map((c) => [c.id, c]));
   const favorites = getFavorites().map((id) => byId.get(id)).filter(Boolean) as Channel[];
   const recents = recentIds.map((id) => byId.get(id)).filter(Boolean) as Channel[];
+  const inCat = (c: Channel) => c.category === category;
 
   function open(c: Channel) {
     setLastChannel(c.id);
@@ -61,14 +62,15 @@ export function HomeView() {
   }
 
   function handleCategory(cat: string) {
-    if (cat !== "All") router.push(`/category/${cat.toLowerCase()}`);
+    if (cat === "All") router.push("/");
+    else router.push(`/category/${cat.toLowerCase()}`);
   }
 
   return (
     <main ref={mainRef} className="home-main">
       <TopBar
         categories={TABS}
-        activeCategory="All"
+        activeCategory={category}
         onCategory={handleCategory}
         onSearch={() => router.push("/search")}
         onSettings={() => setShowSettings(true)}
@@ -80,18 +82,18 @@ export function HomeView() {
           onClose={() => { setShowSettings(false); router.refresh(); }}
         />
       )}
-      <CategoryRow title="Favorites" channels={favorites} onSelect={open} />
-      <CategoryRow title="Continue Watching" channels={recents} onSelect={open} onRemove={removeFromRecents} />
-      {ORDER.map((cat) => (
-        <CategoryRow
-          key={cat}
-          title={cat}
-          channels={filtered.filter((c) => c.category === cat)}
-          limit={ROW_LIMIT}
-          onSelect={open}
-          onSeeAll={() => router.push(`/category/${cat.toLowerCase()}`)}
-        />
-      ))}
+      <CategoryRow title="Favorites" channels={favorites.filter(inCat)} onSelect={open} />
+      <CategoryRow
+        title="Continue Watching"
+        channels={recents.filter(inCat)}
+        onSelect={open}
+        onRemove={removeFromRecents}
+      />
+      <CategoryPage
+        title={category}
+        channels={filtered.filter(inCat)}
+        onSelect={open}
+      />
     </main>
   );
 }

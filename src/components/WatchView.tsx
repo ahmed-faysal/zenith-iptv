@@ -92,14 +92,14 @@ export function WatchView({ channelId }: { channelId: string }) {
     function onKey(e: KeyboardEvent) {
       if (isBackKey(e) || e.key === "Backspace") {
         if (sidebar) setSidebar(false);
-        else router.push("/");
+        else router.back();
         return;
       }
       const m = mediaAction(e);
       if (m === "toggle") setPaused((p) => !p);
       else if (m === "play") setPaused(false);
       else if (m === "pause") setPaused(true);
-      else if (m === "stop") router.push("/");
+      else if (m === "stop") router.back();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -150,7 +150,7 @@ export function WatchView({ channelId }: { channelId: string }) {
         onTogglePlay={() => setPaused((p) => !p)}
         onToggleFavorite={toggleFav}
         onOpenChannels={() => setSidebar(true)}
-        onBack={() => router.push("/")}
+        onBack={() => router.back()}
         onVolumeChange={(v) => { setVolume(v); if (v > 0) setMuted(false); }}
         onToggleMute={() => setMuted((m) => !m)}
         onFullscreen={toggleFullscreen}
