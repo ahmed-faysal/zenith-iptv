@@ -202,8 +202,8 @@ input[type="checkbox"][data-focusable]:focus {
 }
 
 /* ---- Remove-from-recents button -----------------------------------------
-   Sits at the top-right corner of a card in the Continue Watching row.
-   Hidden until the wrapper is hovered or the button itself is focused. */
+   Frosted glass × in the top-right corner of Continue Watching cards.
+   Fades in on card hover; only turns red when the button itself is hovered. */
 .card-wrap {
   position: relative;
   display: inline-flex;
@@ -212,22 +212,24 @@ input[type="checkbox"][data-focusable]:focus {
 
 .card-remove {
   position: absolute;
-  top: 6px;
-  right: 6px;
-  width: 26px;
-  height: 26px;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  border: none;
-  background: rgba(0, 0, 0, 0.72);
-  color: #fff;
-  font-size: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(12, 12, 12, 0.78);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 12px;
   line-height: 1;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 0.15s ease, background 0.15s ease;
+  transition: opacity 0.15s ease, background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   z-index: 2;
 }
 
@@ -238,8 +240,150 @@ input[type="checkbox"][data-focusable]:focus {
 
 .card-remove:hover,
 .card-remove:focus {
-  background: rgba(220, 50, 50, 0.9);
+  background: rgba(200, 40, 40, 0.88);
+  border-color: rgba(255, 90, 90, 0.35);
+  color: #fff;
   outline: none;
+}
+
+/* ---- Settings sidebar ----------------------------------------------------
+   Slides in from the right; backdrop dims the rest of the screen. */
+.settings-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 50;
+}
+
+.settings-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: clamp(300px, 28vw, 400px);
+  height: 100dvh;
+  background: rgba(14, 16, 22, 0.96);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 28px 24px 24px;
+  overflow-y: auto;
+  z-index: 51;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  animation: sidebar-in 0.22s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@keyframes sidebar-in {
+  from { transform: translateX(100%); opacity: 0.4; }
+  to   { transform: translateX(0);    opacity: 1;   }
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.settings-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.settings-close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.settings-close:hover,
+.settings-close:focus {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  outline: none;
+}
+
+.settings-section-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 24px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 14px;
+  transition: background 0.12s ease;
+}
+
+.settings-row:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.settings-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 20px;
+}
+
+.settings-btn {
+  flex: 1;
+  padding: 10px 0;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.settings-btn:hover,
+.settings-btn:focus {
+  background: rgba(255, 255, 255, 0.12);
+  outline: none;
+}
+
+.settings-btn--primary {
+  background: #4da3ff;
+  border-color: transparent;
+  color: #fff;
+}
+
+.settings-btn--primary:hover,
+.settings-btn--primary:focus {
+  background: #6db8ff;
 }
 
 /* ---- App bar ------------------------------------------------------------

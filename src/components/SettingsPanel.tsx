@@ -4,8 +4,6 @@ import { getPrefs, setPrefs } from "@/lib/storage";
 import { useFocusNav } from "@/hooks/useFocusNav";
 import { isBackKey } from "@/lib/keys";
 
-// Pick-lists derived from the loaded channels — no typing required on a TV
-// remote. Languages/countries are the distinct values present in the catalogue.
 export function SettingsPanel({
   languages, countries, onClose,
 }: { languages: string[]; countries: string[]; onClose: () => void }) {
@@ -14,15 +12,12 @@ export function SettingsPanel({
   const ref = useRef<HTMLDivElement>(null);
   useFocusNav(ref, { orientation: "vertical" });
 
-  // Grab focus on open and hand it back to the opener (the TopBar Settings
-  // button) when the panel unmounts, so the remote isn't stranded.
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
     ref.current?.querySelector<HTMLElement>("[data-focusable]")?.focus();
     return () => opener?.focus();
   }, []);
 
-  // Back/Escape (incl. the webOS Back keyCode 461) closes the panel.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (isBackKey(e)) { e.preventDefault(); onClose(); }
@@ -42,18 +37,19 @@ export function SettingsPanel({
     onClose();
   }
 
-  const listStyle: React.CSSProperties = { maxHeight: 160, overflowY: "auto", margin: "6px 0 16px", display: "flex", flexDirection: "column", gap: 4 };
-  const rowStyle: React.CSSProperties = { display: "flex", alignItems: "center", gap: 8, padding: "4px 6px", borderRadius: 6 };
-
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-      <div ref={ref} style={{ background: "#111", padding: 24, borderRadius: 12, width: 360, maxHeight: "80vh", overflowY: "auto" }}>
-        <h2 style={{ marginTop: 0 }}>Settings</h2>
+    <>
+      <div className="settings-backdrop" onClick={onClose} />
+      <div ref={ref} className="settings-sidebar">
+        <div className="settings-header">
+          <h2 className="settings-title">Settings</h2>
+          <button className="settings-close" data-focusable onClick={onClose} aria-label="Close settings">✕</button>
+        </div>
 
-        <h3 style={{ marginBottom: 0 }}>Languages</h3>
-        <div style={listStyle}>
+        <h3 className="settings-section-title">Languages</h3>
+        <div className="settings-list">
           {languages.map((l) => (
-            <label key={l} style={rowStyle}>
+            <label key={l} className="settings-row">
               <input
                 data-focusable
                 type="checkbox"
@@ -61,15 +57,15 @@ export function SettingsPanel({
                 onChange={() => setLangs(toggle(langs, l))}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setLangs(toggle(langs, l)); } }}
               />
-              {l}
+              <span>{l}</span>
             </label>
           ))}
         </div>
 
-        <h3 style={{ marginBottom: 0 }}>Countries</h3>
-        <div style={listStyle}>
+        <h3 className="settings-section-title">Countries</h3>
+        <div className="settings-list">
           {countries.map((c) => (
-            <label key={c} style={rowStyle}>
+            <label key={c} className="settings-row">
               <input
                 data-focusable
                 type="checkbox"
@@ -77,16 +73,16 @@ export function SettingsPanel({
                 onChange={() => setCtry(toggle(ctry, c))}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setCtry(toggle(ctry, c)); } }}
               />
-              {c}
+              <span>{c}</span>
             </label>
           ))}
         </div>
 
-        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-          <button data-focusable onClick={onClose} style={{ padding: "8px 16px" }}>Cancel</button>
-          <button data-focusable onClick={save} style={{ padding: "8px 16px", background: "#4da3ff", color: "#fff", border: "none", borderRadius: 8 }}>Save</button>
+        <div className="settings-actions">
+          <button data-focusable className="settings-btn" onClick={onClose}>Cancel</button>
+          <button data-focusable className="settings-btn settings-btn--primary" onClick={save}>Save</button>
         </div>
       </div>
-    </div>
+    </>
   );
 }
