@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
 import type { Level } from "./QualitySelector";
-import { hlsConfig } from "@/lib/player";
+import { hlsConfig, planRecovery, type FatalKind, type RecoveryState } from "@/lib/player";
 
 type Status = "loading" | "playing" | "error";
 
@@ -21,6 +21,8 @@ export function VideoPlayer({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
+  // Bounded fatal-error recovery budget; reset per channel + on successful play.
+  const recovery = useRef<RecoveryState>({ network: 0, media: 0 });
   const [status, setStatus] = useState<Status>("loading");
   // Distinct from `status`: a mid-playback stall (network hiccup on a live
   // stream) while already playing. The initial load shows "Loading…" via
@@ -32,6 +34,7 @@ export function VideoPlayer({
     if (!video) return;
     setStatus("loading");
     setBuffering(false);
+    recovery.current = { network: 0, media: 0 }; // fresh budget per channel
 
     if (Hls.isSupported()) {
       const hls = new Hls(hlsConfig());
@@ -42,8 +45,20 @@ export function VideoPlayer({
         onLevels?.(data.levels.map((l) => ({ height: l.height })));
         video.play().then(() => setStatus("playing")).catch(() => {});
       });
+      // A buffered fragment means recovery (if any) worked — refresh the budget.
+      hls.on(Hls.Events.FRAG_BUFFERED, () => { recovery.current = { network: 0, media: 0 }; });
+      // Fatal errors: try a bounded recovery before surfacing "unavailable".
       hls.on(Hls.Events.ERROR, (_e, data) => {
-        if (data.fatal) setStatus("error");
+        if (!data.fatal) return; // non-fatal errors self-heal
+        const kind: FatalKind =
+          data.type === Hls.ErrorTypes.NETWORK_ERROR ? "network"
+          : data.type === Hls.ErrorTypes.MEDIA_ERROR ? "media"
+          : "other";
+        const { action, state } = planRecovery(kind, recovery.current);
+        recovery.current = state;
+        if (action === "restartLoad") hls.startLoad();
+        else if (action === "recoverMedia") hls.recoverMediaError();
+        else setStatus("error");
       });
       return () => { hls.destroy(); hlsRef.current = null; };
     }

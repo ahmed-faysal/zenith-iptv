@@ -23,6 +23,30 @@ export function formatClock(date: Date): string {
   return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
 }
 
+// Fatal hls.js errors fall into three kinds; we attempt a bounded recovery
+// before giving up so a transient hiccup doesn't dead-end on "Stream
+// unavailable", while a genuinely dead stream still fails fast (cap reached).
+export type FatalKind = "network" | "media" | "other";
+export type RecoveryState = { network: number; media: number };
+export type RecoveryAction = "restartLoad" | "recoverMedia" | "giveUp";
+
+// Per-kind recovery attempts before we surface the error. Counters reset on
+// successful playback / channel change (see VideoPlayer), so this is "in a row".
+export const MAX_RECOVERY = 2;
+
+export function planRecovery(
+  kind: FatalKind,
+  state: RecoveryState,
+): { action: RecoveryAction; state: RecoveryState } {
+  if (kind === "network" && state.network < MAX_RECOVERY) {
+    return { action: "restartLoad", state: { ...state, network: state.network + 1 } };
+  }
+  if (kind === "media" && state.media < MAX_RECOVERY) {
+    return { action: "recoverMedia", state: { ...state, media: state.media + 1 } };
+  }
+  return { action: "giveUp", state };
+}
+
 // Label for the quality pill: "Auto" unless an explicit, in-range level is set.
 export function qualityLabel(levels: Level[], current: number): string {
   const level = current >= 0 ? levels[current] : undefined;

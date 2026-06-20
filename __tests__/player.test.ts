@@ -1,5 +1,37 @@
 import { describe, it, expect } from "vitest";
-import { formatClock, qualityLabel, hlsConfig } from "@/lib/player";
+import { formatClock, qualityLabel, hlsConfig, planRecovery, MAX_RECOVERY } from "@/lib/player";
+
+describe("planRecovery", () => {
+  const fresh = () => ({ network: 0, media: 0 });
+
+  it("restarts loading on a network fatal, counting the attempt", () => {
+    const r = planRecovery("network", fresh());
+    expect(r.action).toBe("restartLoad");
+    expect(r.state).toEqual({ network: 1, media: 0 });
+  });
+  it("recovers media on a media fatal, counting the attempt", () => {
+    const r = planRecovery("media", fresh());
+    expect(r.action).toBe("recoverMedia");
+    expect(r.state).toEqual({ network: 0, media: 1 });
+  });
+  it("gives up on a network fatal once the cap is reached", () => {
+    const r = planRecovery("network", { network: MAX_RECOVERY, media: 0 });
+    expect(r.action).toBe("giveUp");
+    expect(r.state).toEqual({ network: MAX_RECOVERY, media: 0 }); // unchanged
+  });
+  it("gives up on a media fatal once the cap is reached", () => {
+    const r = planRecovery("media", { network: 0, media: MAX_RECOVERY });
+    expect(r.action).toBe("giveUp");
+  });
+  it("gives up immediately on an other/unknown fatal", () => {
+    expect(planRecovery("other", fresh()).action).toBe("giveUp");
+  });
+  it("tracks network and media budgets independently", () => {
+    // network exhausted, media still has budget
+    const r = planRecovery("media", { network: MAX_RECOVERY, media: 0 });
+    expect(r.action).toBe("recoverMedia");
+  });
+});
 
 describe("hlsConfig", () => {
   it("caps the back-buffer so long sessions don't grow unbounded in RAM", () => {
