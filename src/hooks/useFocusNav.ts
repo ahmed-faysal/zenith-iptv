@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, RefObject } from "react";
 
-type Options = { orientation?: "horizontal" | "vertical" | "grid" };
+type Options = { orientation?: "horizontal" | "vertical" };
 
 export function useFocusNav(
   ref: RefObject<HTMLElement | null>,
