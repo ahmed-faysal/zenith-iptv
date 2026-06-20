@@ -39,13 +39,15 @@ jobs:
         run: npx tsx scripts/build-epg-channels.ts epg-build/custom.channels.xml
 
       - name: Grab EPG (iptv-org/epg)
+        env:
+          NODE_OPTIONS: "--max-old-space-size=6144"
         run: |
           git clone --depth 1 https://github.com/iptv-org/epg.git .epg
           cd .epg
           npm install --no-audit --no-fund
           npm run grab -- \
             --channels=../epg-build/custom.channels.xml \
-            --maxConnections=5 --days=2 --gzip \
+            --maxConnections=10 --days=1 --gzip \
             --output=../epg-build/guide.xml
 
       - name: Publish to epg branch
