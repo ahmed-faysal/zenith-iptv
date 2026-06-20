@@ -10,7 +10,15 @@ import type { HlsConfig } from "hls.js";
 //                         the surface is smaller than the source).
 // A fresh object per call because hls.js stores and may mutate the config.
 export function hlsConfig(): Partial<HlsConfig> {
-  return { backBufferLength: 30, capLevelToPlayerSize: true };
+  return {
+    backBufferLength: 30,
+    capLevelToPlayerSize: true,
+    // Tighten per-attempt timeouts so a dead stream fails fast. Our
+    // planRecovery handles retries; hls.js internal retries on top would
+    // multiply the wait (default 10s × 2 internal × 2 planRecovery = 40s+).
+    manifestLoadingTimeOut: 8000,
+    levelLoadingTimeOut: 8000,
+  };
 }
 
 // "12:43 AM" — explicit 12-hour formatting (deterministic, unlike

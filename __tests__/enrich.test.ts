@@ -65,7 +65,7 @@ import { buildEnrichment, type RawChannel, type RawStream } from "@/lib/enrich";
 
 describe("buildEnrichment", () => {
   const channels: RawChannel[] = [
-    { id: "CNN.us", country: "US", categories: ["news"] },
+    { id: "CNN.us", country: "US", categories: ["news"], languages: ["English"] },
   ];
   const logos: RawLogo[] = [
     { channel: "CNN.us", feed: null, in_use: true, tags: [], width: 300, height: 200, format: "SVG", url: "cnn.svg" },
@@ -77,7 +77,7 @@ describe("buildEnrichment", () => {
   it("joins metadata onto the M3U id (channel@feed)", () => {
     const map = buildEnrichment(["CNN.us@HD"], channels, logos, streams);
     expect(map["CNN.us@HD"]).toEqual({
-      category: "News", country: "US", logo: "cnn.svg", quality: "1080p",
+      category: "News", country: "US", logo: "cnn.svg", quality: "1080p", languages: ["English"],
     });
   });
   it("matches quality by channel AND feed", () => {

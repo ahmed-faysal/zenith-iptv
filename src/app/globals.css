@@ -349,6 +349,13 @@ input[type="checkbox"][data-focusable]:focus {
   background: rgba(255, 255, 255, 0.06);
 }
 
+.settings-row__code {
+  margin-left: auto;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.3);
+  font-family: monospace;
+}
+
 .settings-actions {
   display: flex;
   gap: 8px;

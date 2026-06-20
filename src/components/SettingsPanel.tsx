@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { getPrefs, setPrefs } from "@/lib/storage";
 import { useFocusNav } from "@/hooks/useFocusNav";
 import { isBackKey } from "@/lib/keys";
+import { countryName } from "@/lib/countries";
 
 export function SettingsPanel({
   languages, countries, onClose,
@@ -73,7 +74,8 @@ export function SettingsPanel({
                 onChange={() => setCtry(toggle(ctry, c))}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setCtry(toggle(ctry, c)); } }}
               />
-              <span>{c}</span>
+              <span>{countryName(c)}</span>
+              <span className="settings-row__code">{c}</span>
             </label>
           ))}
         </div>

@@ -29,6 +29,16 @@ export function VideoPlayer({
   // `status`, so we only surface the spinner once playback has started.
   const [buffering, setBuffering] = useState(false);
 
+  // Hard cap: if the stream hasn't started within 15s, give up. Covers
+  // unresponsive servers that never fire an error (hls.js stays silent).
+  useEffect(() => {
+    const t = setTimeout(
+      () => setStatus((s) => (s === "loading" ? "error" : s)),
+      15_000,
+    );
+    return () => clearTimeout(t);
+  }, [src]);
+
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;

@@ -35,12 +35,16 @@ describe("planRecovery", () => {
 
 describe("hlsConfig", () => {
   it("caps the back-buffer so long sessions don't grow unbounded in RAM", () => {
-    // hls.js defaults backBufferLength to Infinity, which leaks memory on a TV
-    // left running for hours. 30s is plenty for live playback.
     expect(hlsConfig().backBufferLength).toBe(30);
   });
   it("caps ABR to the rendered player size to avoid wasting bandwidth", () => {
     expect(hlsConfig().capLevelToPlayerSize).toBe(true);
+  });
+  it("sets a tight manifest timeout so dead streams fail fast", () => {
+    expect(hlsConfig().manifestLoadingTimeOut).toBe(8000);
+  });
+  it("sets a tight level timeout matching the manifest timeout", () => {
+    expect(hlsConfig().levelLoadingTimeOut).toBe(8000);
   });
   it("returns a fresh object each call (hls.js may mutate its config)", () => {
     expect(hlsConfig()).not.toBe(hlsConfig());

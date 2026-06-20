@@ -22,9 +22,9 @@ export function bestLogo(logos: RawLogo[], feed?: string | null): string | undef
   return [...logos].sort((a, b) => score(b) - score(a))[0].url;
 }
 
-export type RawChannel = { id: string; country: string | null; categories: string[] };
+export type RawChannel = { id: string; country: string | null; categories: string[]; languages: string[] };
 export type RawStream = { channel: string | null; feed: string | null; quality: string | null };
-export type EnrichmentEntry = { category?: AppCategory; country?: string; logo?: string; quality?: string };
+export type EnrichmentEntry = { category?: AppCategory; country?: string; logo?: string; quality?: string; languages?: string[] };
 export type EnrichmentMap = Record<string, EnrichmentEntry>;
 
 const feedOf = (id: string): string | null => (id.includes("@") ? id.split("@")[1] : null);
@@ -58,6 +58,7 @@ export function buildEnrichment(
     if (logo) entry.logo = logo;
     const quality = streamByKey.get(`${base}@${feed ?? ""}`)?.quality;
     if (quality) entry.quality = quality;
+    if (ch.languages?.length) entry.languages = ch.languages;
     if (Object.keys(entry).length) map[id] = entry;
   }
   return map;
@@ -74,6 +75,7 @@ export function applyEnrichment(channels: Channel[], map: EnrichmentMap): Channe
       ...c,
       category: e.category ?? c.category,
       countries: e.country ? [e.country] : c.countries,
+      languages: e.languages?.length ? e.languages : c.languages,
       logo: e.logo ?? c.logo,
       quality: e.quality ?? c.quality,
     };

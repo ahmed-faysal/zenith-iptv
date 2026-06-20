@@ -15,8 +15,9 @@ describe("SettingsPanel", () => {
     render(<SettingsPanel languages={langs} countries={countries} onClose={() => {}} />);
     expect(screen.getByLabelText("English")).toBeInTheDocument();
     expect(screen.getByLabelText("Spanish")).toBeInTheDocument();
-    expect(screen.getByLabelText("GB")).toBeInTheDocument();
-    expect(screen.getByLabelText("US")).toBeInTheDocument();
+    // Country labels show full name + code; match by the full name fragment
+    expect(screen.getByRole("checkbox", { name: /United Kingdom/i })).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: /United States/i })).toBeInTheDocument();
   });
 
   it("pre-checks options already in saved prefs", () => {
@@ -24,8 +25,8 @@ describe("SettingsPanel", () => {
     render(<SettingsPanel languages={langs} countries={countries} onClose={() => {}} />);
     expect(screen.getByLabelText("English")).toBeChecked();
     expect(screen.getByLabelText("Spanish")).not.toBeChecked();
-    expect(screen.getByLabelText("US")).toBeChecked();
-    expect(screen.getByLabelText("GB")).not.toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /United States/i })).toBeChecked();
+    expect(screen.getByRole("checkbox", { name: /United Kingdom/i })).not.toBeChecked();
   });
 
   it("toggles an option with the Enter key (remote OK button)", async () => {
@@ -42,7 +43,7 @@ describe("SettingsPanel", () => {
       <SettingsPanel languages={langs} countries={countries} onClose={() => { closed = true; }} />
     );
     await userEvent.click(screen.getByLabelText("Spanish"));
-    await userEvent.click(screen.getByLabelText("GB"));
+    await userEvent.click(screen.getByRole("checkbox", { name: /United Kingdom/i }));
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
 
     expect(getPrefs()).toEqual({ languages: ["Spanish"], countries: ["GB"] });
@@ -86,7 +87,7 @@ describe("SettingsPanel", () => {
     const opener = screen.getByRole("button", { name: "Settings" });
     opener.focus();
     await userEvent.click(opener);
-    expect(screen.getByLabelText("English")).toHaveFocus(); // modal grabbed focus
+    expect(screen.getByRole("button", { name: "Close settings" })).toHaveFocus(); // modal grabbed focus
     await userEvent.keyboard("{Escape}");
     expect(opener).toHaveFocus(); // returned on close
   });

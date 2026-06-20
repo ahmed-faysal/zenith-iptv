@@ -27,7 +27,7 @@ export function TopBar({
     <div ref={ref} data-row className="app-bar">
       <div className="app-bar__brand">
         <span className="app-bar__mark" aria-hidden>📺</span>
-        <span className="app-bar__name">Live TV</span>
+        <span className="app-bar__name">Zenith</span>
       </div>
 
       {categories.length > 0 && (
