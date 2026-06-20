@@ -517,6 +517,23 @@ input[type="checkbox"][data-focusable]:focus {
   padding: 0 clamp(16px, 3vw, 54px);
   margin-bottom: 6px;
 }
+.cat-row__see-all {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 2px 0;
+  transition: color 0.15s ease;
+  white-space: nowrap;
+}
+.cat-row__see-all:hover,
+.cat-row__see-all:focus {
+  color: #fff;
+  outline: none;
+}
 .cat-row__title {
   font-size: clamp(18px, 1.7vw, 26px);
   font-weight: 800;
@@ -541,6 +558,80 @@ input[type="checkbox"][data-focusable]:focus {
 }
 .cat-row__track::-webkit-scrollbar {
   display: none;
+}
+
+/* ---- Category page (vertical grid) ------------------------------------------
+   Shown when a specific category tab is active. Replaces the single horizontal
+   row with a wrapping grid so all channels are browsable without side-scrolling. */
+.cat-page {
+  padding: 0 clamp(16px, 3vw, 54px) clamp(32px, 5vh, 64px);
+}
+
+.cat-page__head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.cat-page__title {
+  font-size: clamp(20px, 2vw, 30px);
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: 0.2px;
+}
+
+.cat-page__count {
+  font-size: 13px;
+  font-weight: 700;
+  color: #8b96a5;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.cat-page__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(132px, 12vw, 208px), 1fr));
+  gap: clamp(10px, 1.2vw, 18px);
+}
+
+.cat-page__grid .channel-card {
+  width: 100%;
+}
+
+.cat-page__more-wrap {
+  display: flex;
+  justify-content: center;
+  margin-top: clamp(24px, 3vw, 40px);
+}
+
+.cat-page__more {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 28px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: #e8ecf2;
+  font-size: clamp(14px, 1vw, 16px);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.cat-page__more:hover,
+.cat-page__more:focus {
+  background: rgba(77, 163, 255, 0.15);
+  border-color: rgba(77, 163, 255, 0.5);
+  outline: none;
+}
+
+.cat-page__more-count {
+  font-size: 12px;
+  font-weight: 500;
+  color: #8b96a5;
 }
 
 .home-main {

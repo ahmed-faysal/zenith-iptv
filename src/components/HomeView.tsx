@@ -9,6 +9,7 @@ import { useGridFocus } from "@/hooks/useGridFocus";
 import { useChannels } from "@/hooks/useChannels";
 import { topValues } from "@/lib/filters";
 import { getFavorites, getRecents, getPrefs, setLastChannel, pushRecent, removeRecent } from "@/lib/storage";
+import { CategoryPage } from "./CategoryPage";
 
 const ORDER: AppCategory[] = ["News", "Sports", "Entertainment", "Music", "Kids", "Other"];
 const TABS = ["All", ...ORDER]; // app-bar category filter; "All" shows every row
@@ -56,7 +57,6 @@ export function HomeView() {
   // The active tab narrows what's shown: "All" keeps the full layout; a category
   // shows just that row, with Favorites/Continue-Watching filtered to match.
   const inCat = (c: Channel) => activeCat === "All" || c.category === activeCat;
-  const shownCats = activeCat === "All" ? ORDER : ([activeCat] as AppCategory[]);
 
   function open(c: Channel) {
     setLastChannel(c.id);
@@ -86,17 +86,32 @@ export function HomeView() {
           onClose={() => { setShowSettings(false); router.refresh(); }}
         />
       )}
-      <CategoryRow title="Favorites" channels={favorites.filter(inCat)} onSelect={open} />
-      <CategoryRow title="Continue Watching" channels={recents.filter(inCat)} onSelect={open} onRemove={removeFromRecents} />
-      {shownCats.map((cat) => (
-        <CategoryRow
-          key={cat}
-          title={cat}
-          channels={filtered.filter((c) => c.category === cat)}
-          limit={ROW_LIMIT}
-          onSelect={open}
-        />
-      ))}
+      {activeCat === "All" ? (
+        <>
+          <CategoryRow title="Favorites" channels={favorites} onSelect={open} />
+          <CategoryRow title="Continue Watching" channels={recents} onSelect={open} onRemove={removeFromRecents} />
+          {ORDER.map((cat) => (
+            <CategoryRow
+              key={cat}
+              title={cat}
+              channels={filtered.filter((c) => c.category === cat)}
+              limit={ROW_LIMIT}
+              onSelect={open}
+              onSeeAll={() => setActiveCat(cat)}
+            />
+          ))}
+        </>
+      ) : (
+        <>
+          <CategoryRow title="Favorites" channels={favorites.filter(inCat)} onSelect={open} />
+          <CategoryRow title="Continue Watching" channels={recents.filter(inCat)} onSelect={open} onRemove={removeFromRecents} />
+          <CategoryPage
+            title={activeCat}
+            channels={filtered.filter((c) => c.category === activeCat)}
+            onSelect={open}
+          />
+        </>
+      )}
     </main>
   );
 }
