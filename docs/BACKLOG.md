@@ -46,25 +46,6 @@ Source review: post-merge holistic review on 2026-06-17.
     click (favorite would toggle twice) — handlers now `preventDefault()` the
     duplicate click across ChannelCard/ControlBar/ChannelSidebar.
 
-- [ ] **28. Player controls unreachable by D-pad — favorite needs a non-existent
-  `F` key.** The app's stated promise is "driven entirely by a TV remote's D-pad"
-  (README), but on the Player screen:
-  - The **favorite** toggle ([WatchView.tsx:50](../src/components/WatchView.tsx))
-    is only triggered by `onClick` or pressing **`F`** — there is no `F` key on a
-    TV remote. The star button is not `data-focusable` and [WatchView](../src/components/WatchView.tsx)
-    has no `useGridFocus`/`useFocusNav`, so the D-pad can never land on it.
-  - The **QualitySelector** ([VideoPlayer.tsx:53](../src/components/VideoPlayer.tsx))
-    is likewise unreachable: WatchView's window listener makes **ArrowLeft/Right
-    always drive the sidebar**, so even a focused quality button can't be moved
-    between. Both controls only work in Magic Remote **pointer mode**.
-  - **Fix:** give the Player real D-pad focus management (e.g. an overlay control
-    strip with `data-focusable` favorite + quality buttons, navigated with
-    `useFocusNav`), and bind favorite to **OK/Enter on a focusable button**, not
-    the `F` key. Remove the `F`-key control from the README once done (or keep it
-    only as a desktop convenience).
-
-
-
 - [x] **1. EPG "now playing" removed for v1 (data source 404'd).** ✅ 2026-06-17
   - The old EPG URL `https://iptv-org.github.io/epg/guides/full.xml` returns **404**
     (iptv-org no longer hosts a single pre-generated guide), so the feature only
@@ -242,39 +223,38 @@ than the raw M3U we currently parse. All of the below sit behind the existing
 `/api/channels` seam, so the frontend barely changes. Endpoints:
 `https://iptv-org.github.io/api/{channels,streams,guides,logos,categories,blocklist}.json`.
 
-- [ ] **21. Switch source from M3U parsing to `channels.json` + `streams.json`.**
-  - `channels.json` (39,922) gives clean name, country, **canonical categories**,
-    `is_nsfw`, website; `streams.json` (15,360) gives stream url, `quality`,
-    `user_agent`, `referrer`. Join by channel id in [source.ts](../src/lib/source.ts).
-  - **Benefit:** replaces keyword-guessing in [categories.ts](../src/lib/categories.ts)
-    with canonical category IDs; cleaner, more reliable data model.
-  - **Trade-off:** larger upstream files (≈10 MB + 3 MB) — parsed server-side and
-    cached, but makes slimming the client payload (#6) more important.
+- [x] **21. Channel enrichment from `channels.json`/`logos.json`/`streams.json`.** ✅ 2026-06-19
+  - Shipped as **hybrid enrich** (not full replace): `index.m3u` stays the runtime
+    spine; a build-time generator ([scripts/gen-channels.ts](../scripts/gen-channels.ts))
+    joins the JSON APIs into a slim [enrichment.json](../src/data/enrichment.json)
+    keyed by our `channel@feed` id, merged in [source.ts](../src/lib/source.ts) via
+    [enrich.ts](../src/lib/enrich.ts). Adds canonical categories, reliable country,
+    best logo, and quality. Spec: [2026-06-19-channels-json-enrichment-design.md](superpowers/specs/2026-06-19-channels-json-enrichment-design.md).
+    Avoids request-time cost (no Vercel cold-start hit). Subsumes #17 (format) and #18 (logos).
 
-- [ ] **22. Family-safety filter (high value — kids/family use).**
-  - Current M3U pipeline does **zero** adult filtering. The API flags **373
-    `is_nsfw` channels**, ships a **1,574-entry `blocklist.json`** (DMCA/NSFW),
-    and has an explicit `xxx` category.
-  - **Fix:** exclude `is_nsfw`, anything in `blocklist.json`, and the `xxx`
-    category from the channel list. Depends on #21 (or load these alongside the
-    M3U as a deny-list).
+- [ ] ~~**22. Family-safety filter.**~~ ❌ **Rejected 2026-06-20 (verified).**
+  - `index.m3u` contains **0** `is_nsfw` channels — iptv-org already excludes adult
+    content from the public playlist. The filter would match nothing. (A standalone
+    NSFW toggle was also rejected: iptv-org publishes no adult *streams* — 373 flagged
+    channels, only 3 incidental streams.) See [IDEAS.md](IDEAS.md) Rejected table.
 
-- [ ] **23. Better logos via `logos.json`.**
-  - Dedicated, usually higher-quality artwork vs. M3U `tvg-logo`. Pairs with the
-    broken-logo fallback in #7.
+- [x] **23. Better logos via `logos.json`.** ✅ 2026-06-19
+  - Done in #21: `bestLogo()` picks the best per channel (in-use → format
+    SVG/WebP/PNG → size → feed-specific). 9,016/9,183 channels covered.
 
-- [ ] **24. Send stream headers to reduce dead streams.**
-  - `streams.json` exposes `user_agent` / `referrer`; some streams only play with
-    these. Configure hls.js (`xhrSetup` / loader) in
-    [VideoPlayer.tsx](../src/components/VideoPlayer.tsx) to send them. Likely cuts
-    "Stream unavailable" cases. Depends on #21 for the header data.
+- [ ] ~~**24. Send stream headers to reduce dead streams.**~~ ❌ **Rejected 2026-06-20 (verified).**
+  - `User-Agent`/`Referer` are browser **forbidden headers** — JS (incl. hls.js
+    `xhrSetup`) cannot set them on our browser/webOS target; only a server proxy
+    (#4-parked) could. Only ~6% of streams carry them anyway. See [IDEAS.md](IDEAS.md).
 
-- [ ] **25. Quality metadata from `streams.json`.**
-  - Per-stream `quality` (e.g. "720p") lets us show/sort by quality without
-    waiting for the hls manifest; complements the existing QualitySelector.
+- [x] **25. Quality metadata from `streams.json`.** ✅ 2026-06-19
+  - Done in #21: per-stream `quality` carried in the enrichment artifact; the
+    ChannelCard chip prefers it over the name-parsed value.
 
-> Note: `guides.json` (channel → EPG site mapping) is the missing piece for the
-> proper slim-EPG build in the EPG revival, **#26**.
+> Full, verified triage of all research ideas (viable / parked / rejected with
+> reasons) lives in **[IDEAS.md](IDEAS.md)** — the single source for what's worth
+> building next. Top in-browser picks: error-recovery-by-type, alt_names search,
+> Most Watched.
 
 ---
 
@@ -307,12 +287,13 @@ for full notes. Summary:
 - [ ] **20. Cloudflare Pages migration** — only if the app ever goes
   commercial/public (Vercel free tier prohibits commercial use).
 
-- [~] **26. Revive EPG ("now / next" program guide).** **Implemented on branch
-  `feat/epg-revival`** (spec: [2026-06-18-epg-revival.md](superpowers/specs/2026-06-18-epg-revival.md)).
+- [~] **26. Revive EPG ("now / next" program guide).** **Merged to `main`**
+  (spec: [2026-06-18-epg-revival.md](superpowers/specs/2026-06-18-epg-revival.md)).
   Slim guide pre-built in CI (`.github/workflows/epg.yml` + `scripts/build-epg-channels.ts`),
   served by `/api/epg`, shown as "Now · …" in WatchView. **Dormant until** a repo
   remote exists, the Action publishes the `epg` branch once, and `EPG_GUIDE_URL`
-  is set. Verified coverage: ~3,605 mapped channels once ids are matched on the
+  is set (i.e. gated on deploy #11). EPG enhancements (#5/#6/#32–#39 in
+  [IDEAS.md](IDEAS.md)) apply once it's active. Verified coverage: ~3,605 mapped channels once ids are matched on the
   **base xmltv_id** (our ids carry an `@feed` suffix; the naive join gave ~1).
   Country scoping is inert until the channels.json upgrade (#21) adds country data.
   Removed in v1 (#1) because the old feed 404'd; the old fetch-whole-file-on-demand
