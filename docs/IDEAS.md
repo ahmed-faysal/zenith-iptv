@@ -60,6 +60,14 @@ The full EPG pipeline is merged to `main` but inert until `EPG_GUIDE_URL` is set
 - **#32 EPGTalk** as a zero-pipeline guide URL — *needs validation*: its channel
   ids may not match our iptv-org tvg-ids, so coverage is unproven.
 - **#22-epg `epg-parser` / `@iptv/xmltv`** — robust parser if we stay XMLTV.
+- **#40 "What's on now" / match search** — search every channel's current
+  programme title (e.g. `world cup`, `football`) to surface channels airing a
+  live event, plus an optional "Live now" sports row. **Viable once EPG is
+  active.** Verified: 193/340 (56%) of our Sports channels have an EPG guide
+  mapping. Real caveats: marquee-sport free streams die fastest (the match may be
+  *found* but unwatchable), and title quality is the guide source's (`football`
+  likely hits; team-name search may whiff). Needs `description` parsing (#39) for
+  best matching. Measure on real data after deploy before building.
 
 ---
 
