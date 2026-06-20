@@ -14,7 +14,6 @@ const base = {
   currentLevel: -1,
   onTogglePlay: () => {},
   onToggleFavorite: () => {},
-  onOpenChannels: () => {},
   onBack: () => {},
   onVolumeChange: () => {},
   onToggleMute: () => {},
@@ -34,8 +33,8 @@ describe("PlayerOverlay", () => {
     const { container } = render(<PlayerOverlay {...base} />);
     // top bar, center, bottom row -> at least 3 data-rows for vertical D-pad nav
     expect(container.querySelectorAll("[data-row]").length).toBeGreaterThanOrEqual(3);
-    // Back, Play/Pause, Favorite, Channels, Mute, Fullscreen
-    expect(container.querySelectorAll("[data-focusable]").length).toBeGreaterThanOrEqual(6);
+    // Back, Play/Pause, Favorite, Mute, Fullscreen
+    expect(container.querySelectorAll("[data-focusable]").length).toBeGreaterThanOrEqual(5);
   });
 
   it("toggles play with the center control (Enter)", async () => {

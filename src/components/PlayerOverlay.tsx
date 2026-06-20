@@ -21,7 +21,7 @@ const circle: React.CSSProperties = {
 export function PlayerOverlay({
   channelName, channelSubtitle, isPaused, isFavorite, volume, muted,
   levels, currentLevel, visible = true,
-  onTogglePlay, onToggleFavorite, onOpenChannels, onBack,
+  onTogglePlay, onToggleFavorite, onBack,
   onVolumeChange, onToggleMute, onFullscreen, onSelectLevel,
 }: {
   channelName: string;
@@ -35,7 +35,6 @@ export function PlayerOverlay({
   visible?: boolean;
   onTogglePlay: () => void;
   onToggleFavorite: () => void;
-  onOpenChannels: () => void;
   onBack: () => void;
   onVolumeChange: (v: number) => void;
   onToggleMute: () => void;
@@ -139,8 +138,6 @@ export function PlayerOverlay({
         <button data-focusable aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
           onClick={onToggleFavorite} onKeyDown={press(onToggleFavorite)}
           style={{ ...circle, color: isFavorite ? "#ffd24d" : "#fff" }}>{isFavorite ? "★" : "☆"}</button>
-        <button data-focusable aria-label="Channels" onClick={onOpenChannels} onKeyDown={press(onOpenChannels)}
-          style={{ ...circle, width: "auto", borderRadius: 24, padding: "0 16px", gap: 8 }}>☰ Channels</button>
 
         <div style={{ flex: 1 }} />
 
