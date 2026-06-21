@@ -34,8 +34,9 @@ describe("parseM3U", () => {
     const noId = `#EXTM3U\n#EXTINF:-1 group-title="News",Some Channel\nhttp://x/y.m3u8\n`;
     expect(parseM3U(noId)[0].id).toBe("some-channel");
   });
-  it("de-duplicates channels that share an id, keeping the first", () => {
-    // iptv-org lists some channels several times (same tvg-id, different source).
+  it("keeps every entry, including repeats of an id (merge layer de-dupes)", () => {
+    // iptv sources sometimes list a channel several times (backup URLs); parseM3U
+    // keeps them all and mergeSources unions them later.
     const m3u = `#EXTM3U
 #EXTINF:-1 tvg-id="CNN.us" group-title="News",CNN One
 http://x/1.m3u8
@@ -43,8 +44,8 @@ http://x/1.m3u8
 http://x/2.m3u8
 `;
     const ch = parseM3U(m3u);
-    expect(ch).toHaveLength(1);
-    expect(ch[0].name).toBe("CNN One");
+    expect(ch).toHaveLength(2);
+    expect(ch.map((c) => c.streamUrls[0])).toEqual(["http://x/1.m3u8", "http://x/2.m3u8"]);
   });
   it("generates distinct, non-empty ids for non-Latin names", () => {
     // Both names slugged to "576p" under an ASCII-only slug, colliding.

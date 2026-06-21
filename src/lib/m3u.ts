@@ -15,9 +15,6 @@ function slug(name: string): string {
 export function parseM3U(text: string): Channel[] {
   const lines = text.split(/\r?\n/);
   const channels: Channel[] = [];
-  // id is the channel's identity (React keys, routing, favorites), and iptv-org
-  // lists some channels multiple times — keep the first occurrence of each id.
-  const seen = new Set<string>();
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
@@ -28,8 +25,7 @@ export function parseM3U(text: string): Channel[] {
 
     const name = line.slice(line.lastIndexOf(",") + 1).trim();
     const id = attr(line, "tvg-id") || slug(name);
-    if (!id || seen.has(id)) continue;
-    seen.add(id);
+    if (!id) continue;
 
     const group = attr(line, "group-title");
     const languages = attr(line, "tvg-language").split(";").filter(Boolean);
