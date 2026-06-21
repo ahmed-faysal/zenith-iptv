@@ -26,6 +26,12 @@ driven entirely by a TV remote's D-pad — no mouse or keyboard required.
     when one is dead the player silently tries the next ("Trying another source…")
     before showing "Stream unavailable", so a dead primary no longer dead-ends a
     channel that has a working backup.
+  - **Now playing (EPG)** — when guide data is available the subtitle shows
+    "Now · <programme>" for the current show.
+- **Channels** — a single catalogue merged from several public M3U sources
+  (iptv-org + Free-TV + others) behind one `/api/channels` seam: more coverage,
+  and the same channel found in multiple sources contributes backup URLs to the
+  failover. Add a source in one line in [`src/lib/sources.ts`](src/lib/sources.ts).
 - **Search** (`/search`) — live name search over the full catalogue, fully
   remote-navigable.
 - **Settings** — slide-in sidebar to filter the catalogue by language/country
@@ -91,21 +97,26 @@ src/
   components/          # BrowseView, CategoryPage/Row, ChannelCard, player, …
   hooks/               # focus navigation (useGridFocus/useGridNav/useFocusNav)
                        #   + shared channel cache
-  lib/                 # M3U parsing, channel source + enrichment, storage, types
-  data/                # build-time enrichment.json (categories/logos/quality)
+  lib/                 # M3U parse, source registry + merge, enrichment,
+                       #   EPG source/parse, storage, types
+  data/                # build-time enrichment.json (categories/logos/quality/urls)
 __tests__/             # unit tests (components, hooks, lib)
 scripts/               # enrichment + EPG channel-list generators
 webos/                 # LG webOS hosted-app wrapper + packaging notes
 docs/BACKLOG.md        # single source of truth for outstanding work
 ```
 
-The channel list is parsed from the iptv-org M3U and served behind a single
-[`/api/channels`](src/app/api/channels/route.ts) seam, so swapping or enriching
-the data source later doesn't ripple into the UI.
+Multiple public M3U sources ([`sources.ts`](src/lib/sources.ts)) are fetched in
+parallel, merged ([`merge.ts`](src/lib/merge.ts)) and enriched, then served behind
+a single [`/api/channels`](src/app/api/channels/route.ts) seam, so adding or
+swapping a source doesn't ripple into the UI. Program data ("now/next") is served
+separately by [`/api/epg`](src/app/api/epg/route.ts).
 
 ## Status & roadmap
 
-Core app is complete and deployed to Vercel. Remaining items — the LG TV
-install and activating the program guide (EPG) once the scheduled build is
-running — are tracked in [docs/BACKLOG.md](docs/BACKLOG.md). webOS
-packaging/install steps live in [webos/README.md](webos/README.md).
+Live in production at [zenith-iptv.vercel.app](https://zenith-iptv.vercel.app)
+with multi-source channels, automatic stream failover, and the EPG ("now/next")
+program guide active. Remaining work — the LG TV install, an `mpegts.js` fallback
+for non-HLS streams, and further ideas — is tracked in
+[docs/BACKLOG.md](docs/BACKLOG.md); webOS packaging/install steps live in
+[webos/README.md](webos/README.md).

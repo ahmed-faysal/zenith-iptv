@@ -3,11 +3,14 @@
 Research findings from the IPTV ecosystem (iptv-org stack, iptvnator, iptv-api,
 hls.js, EPGTalk, epg-parser, Free-TV), each **verified against our real
 constraints**: browser + LG webOS target (no native player), iptv-org data as it
-actually is, and Vercel serverless. Last verified **2026-06-20**.
+actually is, and Vercel serverless. Last verified **2026-06-21**.
 
-**Legend:** ✅ shipped · 🟢 viable & actionable now · 🗓️ EPG epic (deploy-gated) ·
-🚀 deploy-gated · 🅿️ parked (viable but infra-heavy / low value) · ❌ rejected
-(verified dead — do not revisit).
+**Status note (2026-06-21):** the app is deployed and EPG is **active**, so the
+"deploy-gated" framing below is historical — the EPG-epic items are now actionable.
+
+**Legend:** ✅ shipped · 🟢 viable & actionable now · 🗓️ EPG enhancements (EPG now
+active) · 🅿️ parked (viable but infra-heavy / low value) · ❌ rejected (verified
+dead — do not revisit).
 
 ---
 
@@ -22,6 +25,16 @@ actually is, and Vercel serverless. Last verified **2026-06-20**.
 - **#26 fatal-error recovery** — `planRecovery()` + VideoPlayer: network→startLoad,
   media→recoverMediaError (≤2 each), reset on successful playback/channel change;
   fewer instant "Stream unavailable" dead-ends.
+- **Automatic stream failover** — `Channel.streamUrls: string[]`; the player
+  advances through a channel's URLs (cap 4) on failure, erroring only when all are
+  exhausted. URLs come from iptv-org `streams.json` alternates + multi-source merge.
+- **Multi-source merge** — curated registry (`sources.ts`) merged behind
+  `/api/channels`: iptv-org + Free-TV/IPTV + atsushi444; identity union collects
+  cross/within-source backup URLs; `http→https` upgrade; dead sources skipped.
+  Subsumes #6 (channel multi-source) and the #25 "Featured row" data source.
+- **EPG ("now/next")** — the dormant pipeline is now live: `EPG_GUIDE_URL` set,
+  `/api/epg` serving ~2,888 channels. See the EPG-enhancements section below.
+- **Deploy** — live at `zenith-iptv.vercel.app` (Vercel, production from `main`).
 
 ---
 
@@ -40,15 +53,16 @@ Ranked by value/effort.
    wire into [keys.ts](../src/lib/keys.ts). Small UX win.
 5. **#16 — Hide dead channels.** Only **45** channels carry a `closed` date — low
    value but a cheap one-line filter in the enrichment merge. Optional.
-6. **#25 — "Featured" row from Free-TV curated list.** Free-TV/IPTV (1,895
-   hand-curated HD channels) as an optional high-quality Featured row. Optional.
+6. **#25 — "Featured" row.** Free-TV/IPTV is now a merged source, so its curated
+   channels are already in the catalogue; a Featured row is now just a UI surfacing
+   choice (e.g. tag-by-source) rather than a new data integration. Optional.
 
 ---
 
-## 🗓️ EPG epic — built, dormant, deploy-gated
+## 🗓️ EPG enhancements — EPG is now active
 
-The full EPG pipeline is merged to `main` but inert until `EPG_GUIDE_URL` is set
-(needs a remote + the Action to publish once). These enhance it **once active**:
+The EPG pipeline is live (`EPG_GUIDE_URL` set; `/api/epg` serving ~2,888
+channels). These now-actionable items would improve it:
 
 - **#5 EPG name fallback** (`tvg-id → tvg-name`) for better match coverage.
 - **#35 `--json` grabber output** — drop our hand-rolled XMLTV regex parser.
@@ -62,19 +76,18 @@ The full EPG pipeline is merged to `main` but inert until `EPG_GUIDE_URL` is set
 - **#22-epg `epg-parser` / `@iptv/xmltv`** — robust parser if we stay XMLTV.
 - **#40 "What's on now" / match search** — search every channel's current
   programme title (e.g. `world cup`, `football`) to surface channels airing a
-  live event, plus an optional "Live now" sports row. **Viable once EPG is
-  active.** Verified: 193/340 (56%) of our Sports channels have an EPG guide
-  mapping. Real caveats: marquee-sport free streams die fastest (the match may be
-  *found* but unwatchable), and title quality is the guide source's (`football`
-  likely hits; team-name search may whiff). Needs `description` parsing (#39) for
-  best matching. Measure on real data after deploy before building.
+  live event, plus an optional "Live now" sports row. **Now viable (EPG active).**
+  Verified: 193/340 (56%) of our Sports channels have an EPG guide mapping. Real
+  caveats: marquee-sport free streams die fastest (the match may be *found* but
+  unwatchable), and title quality is the guide source's (`football` likely hits;
+  team-name search may whiff). Needs `description` parsing (#39) for best matching.
 
 ---
 
-## 🚀 Deploy bucket (unlocks EPG + on-device use)
+## 🚀 On-device (the one remaining deploy-bucket item)
 
-- **#11 Deploy to Vercel** → **#12 set TV app URL** → **#13 install on the LG.**
-  This is the gate for activating EPG and testing everything on the real device.
+- **#13 install on the LG.** Deploy (#11) and the TV app URL (#12) are done; only
+  the on-device install remains — see [webos/README.md](../webos/README.md).
 
 ---
 
@@ -112,6 +125,8 @@ The full EPG pipeline is merged to `main` but inert until `EPG_GUIDE_URL` is set
 
 ## Suggested order
 
-**#26 error recovery is shipped.** Next: 1. **#19 alt_names search** → 2. **#10
-Most Watched** → then **deploy (#11)** to light up EPG and test on the LG.
-#30/#8/#16/#25 are nice-to-haves to fold in opportunistically.
+**Failover, multi-source merge, EPG, and deploy are all shipped.** Next:
+1. **mpegts.js fallback** (play non-HLS streams — see BACKLOG "Next up"), then
+2. **#19 alt_names search** → 3. **#10 Most Watched** → 4. **install on the LG (#13)**.
+#30/#8/#16/#25 and the EPG enhancements are nice-to-haves to fold in
+opportunistically.
