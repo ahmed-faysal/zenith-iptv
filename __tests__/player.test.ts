@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatClock, qualityLabel, hlsConfig, planRecovery, MAX_RECOVERY } from "@/lib/player";
+import { formatClock, qualityLabel, hlsConfig, planRecovery, MAX_RECOVERY, nextSource } from "@/lib/player";
 
 describe("planRecovery", () => {
   const fresh = () => ({ network: 0, media: 0 });
@@ -77,5 +77,18 @@ describe("qualityLabel", () => {
   });
   it("falls back to Auto for an out-of-range index", () => {
     expect(qualityLabel([{ height: 1080 }], 5)).toBe("Auto");
+  });
+});
+
+describe("nextSource", () => {
+  it("advances to the next index", () => {
+    expect(nextSource(0, 3)).toBe(1);
+    expect(nextSource(1, 3)).toBe(2);
+  });
+  it("returns null at the last source", () => {
+    expect(nextSource(2, 3)).toBeNull();
+  });
+  it("returns null for a single source", () => {
+    expect(nextSource(0, 1)).toBeNull();
   });
 });

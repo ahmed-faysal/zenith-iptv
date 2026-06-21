@@ -60,3 +60,8 @@ export function qualityLabel(levels: Level[], current: number): string {
   const level = current >= 0 ? levels[current] : undefined;
   return level ? `${level.height}p` : "Auto";
 }
+
+// Next stream-source index to try, or null when all sources are exhausted.
+export function nextSource(idx: number, total: number): number | null {
+  return idx + 1 < total ? idx + 1 : null;
+}
