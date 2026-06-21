@@ -73,6 +73,14 @@ describe("applyEnrichment", () => {
     const out = applyEnrichment([chan({ streamUrls: ["only"] })], { "CNN.us@HD": { category: "News" } });
     expect(out[0].streamUrls).toEqual(["only"]);
   });
+
+  it("upgrades http alternate URLs to https when merging enrichment", () => {
+    const out = applyEnrichment(
+      [chan({ streamUrls: ["https://primary"] })],
+      { "CNN.us@HD": { urls: ["http://alt-1", "https://alt-2"] } },
+    );
+    expect(out[0].streamUrls).toEqual(["https://primary", "https://alt-1", "https://alt-2"]);
+  });
 });
 
 import { buildEnrichment, type RawChannel, type RawStream } from "@/lib/enrich";

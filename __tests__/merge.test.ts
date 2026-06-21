@@ -31,6 +31,10 @@ describe("identityKey", () => {
     expect(identityKey(ch({ id: "some-channel", name: "Some Channel", countries: ["US"] })))
       .toBe("name:somechannel|US");
   });
+
+  it("falls back to id when the name normalizes to empty", () => {
+    expect(identityKey(ch({ id: "ch-4k", name: "4K", countries: ["US"] }))).toBe("name:ch-4k|US");
+  });
 });
 
 describe("mergeSources", () => {

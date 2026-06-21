@@ -1,11 +1,6 @@
 import type { Channel } from "./types";
-import { MAX_SOURCES } from "./enrich";
-
-// http:// streams are blocked by the browser on our HTTPS origin; upgrade to
-// https:// so TLS-capable servers play (others fail and the player fails over).
-export function httpsUpgrade(url: string): string {
-  return url.startsWith("http://") ? "https://" + url.slice("http://".length) : url;
-}
+import { MAX_SOURCES, httpsUpgrade } from "./enrich";
+export { httpsUpgrade };
 
 // Normalize a name for fuzzy cross-source identity: lowercase, drop
 // resolution/quality tokens and non-alphanumerics ("ESPN HD" -> "espn").
@@ -18,7 +13,8 @@ export function normalizeName(name: string): string {
 // signal; else normalized name + primary country.
 export function identityKey(c: Channel): string {
   if (c.id.includes(".")) return `id:${c.id}`;
-  return `name:${normalizeName(c.name)}|${c.countries[0] ?? ""}`;
+  const norm = normalizeName(c.name);
+  return `name:${norm || c.id}|${c.countries[0] ?? ""}`;
 }
 
 function capUrls(urls: string[]): string[] {
