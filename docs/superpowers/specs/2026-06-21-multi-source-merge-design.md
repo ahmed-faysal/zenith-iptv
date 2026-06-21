@@ -1,8 +1,23 @@
 # Multi-Source Playlist Merge — Design
 
 **Date:** 2026-06-21
-**Status:** Approved (brainstorming) — pending implementation
+**Status:** Implemented on branch `multi-source-merge`
 **Branch:** `multi-source-merge`
+
+> **Post-implementation notes (from final review):**
+> - The https-upgrade is now also applied to enrichment alternate URLs inside
+>   `applyEnrichment` (not only in `mergeSources`), so the all-https contract holds
+>   end-to-end. `httpsUpgrade` lives in `enrich.ts` and is re-exported from
+>   `merge.ts` (avoids a circular import). This also improves the already-shipped
+>   failover (drops dead `http://` alternates from enrichment).
+> - Priority/cap interaction is intended: a channel's `streamUrls` is the merged
+>   cross-source union (primary M3U URL always first) capped at `MAX_SOURCES`, then
+>   enrichment alternates are appended and the whole thing re-capped. For a channel
+>   present in several sources this can push curated `streams.json` alternates past
+>   the cap — accepted, because cross-source backups are the goal and the canonical
+>   primary URL is always retained.
+> - `identityKey` falls back to the channel `id` when a name normalizes to empty
+>   (e.g. "4K"), so degenerate names don't collide.
 
 ## Problem
 
