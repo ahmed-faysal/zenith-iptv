@@ -6,7 +6,7 @@ import type { Channel } from "@/lib/types";
 
 const ch: Channel = {
   id: "A.x", name: "Channel A", logo: "http://x/a.png",
-  streamUrl: "http://x/a.m3u8", category: "News",
+  streamUrls: ["http://x/a.m3u8"], category: "News",
   languages: ["English"], countries: ["GB"],
 };
 

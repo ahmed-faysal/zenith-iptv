@@ -17,7 +17,7 @@ describe("parseM3U", () => {
     const [bbc] = parseM3U(SAMPLE);
     expect(bbc.name).toBe("BBC News");
     expect(bbc.logo).toBe("http://logo/bbc.png");
-    expect(bbc.streamUrl).toBe("http://example.com/bbc.m3u8");
+    expect(bbc.streamUrls).toEqual(["http://example.com/bbc.m3u8"]);
   });
   it("derives id, category, languages, countries", () => {
     const [bbc] = parseM3U(SAMPLE);

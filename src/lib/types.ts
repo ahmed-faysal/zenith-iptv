@@ -2,7 +2,7 @@ export type Channel = {
   id: string;
   name: string;
   logo: string;
-  streamUrl: string;
+  streamUrls: string[];
   category: string;
   languages: string[];
   countries: string[];

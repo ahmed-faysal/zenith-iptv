@@ -100,7 +100,7 @@ export function WatchView({ channelId }: { channelId: string }) {
   return (
     <div ref={containerRef} style={{ position: "fixed", inset: 0, background: "#000" }}>
       <VideoPlayer
-        src={active.streamUrl}
+        src={active.streamUrls[0]}
         paused={paused}
         volume={volume}
         muted={muted}

@@ -4,7 +4,7 @@ import type { Channel } from "@/lib/types";
 
 let n = 0;
 const make = (languages: string[]): Channel => ({
-  id: `c${n++}`, name: "x", logo: "", streamUrl: "", category: "News",
+  id: `c${n++}`, name: "x", logo: "", streamUrls: [], category: "News",
   languages, countries: [],
 });
 

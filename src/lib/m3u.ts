@@ -39,7 +39,7 @@ export function parseM3U(text: string): Channel[] {
       id,
       name,
       logo: attr(line, "tvg-logo"),
-      streamUrl: url,
+      streamUrls: [url],
       category: toAppCategory(group ? group.split(";") : []),
       languages,
       countries,

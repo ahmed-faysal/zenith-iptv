@@ -3,7 +3,7 @@ import { createChannelLoader } from "@/lib/channels-client";
 import type { Channel } from "@/lib/types";
 
 const ch: Channel = {
-  id: "a", name: "A", logo: "", streamUrl: "http://x/a",
+  id: "a", name: "A", logo: "", streamUrls: ["http://x/a"],
   category: "News", languages: [], countries: [],
 };
 

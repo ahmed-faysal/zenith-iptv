@@ -38,7 +38,7 @@ import { applyEnrichment } from "@/lib/enrich";
 import type { Channel } from "@/lib/types";
 
 const chan = (o: Partial<Channel>): Channel => ({
-  id: "CNN.us@HD", name: "CNN", logo: "m3u-logo", streamUrl: "u",
+  id: "CNN.us@HD", name: "CNN", logo: "m3u-logo", streamUrls: ["u"],
   category: "Other", languages: [], countries: [], quality: null, ...o,
 });
 

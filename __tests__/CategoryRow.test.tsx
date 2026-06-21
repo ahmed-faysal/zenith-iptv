@@ -5,7 +5,7 @@ import { CategoryRow } from "@/components/CategoryRow";
 import type { Channel } from "@/lib/types";
 
 const make = (id: string, name: string): Channel => ({
-  id, name, logo: "", streamUrl: "http://x/" + id, category: "News",
+  id, name, logo: "", streamUrls: ["http://x/" + id], category: "News",
   languages: [], countries: [],
 });
 const channels = [make("a", "Alpha"), make("b", "Bravo"), make("c", "Cara")];
