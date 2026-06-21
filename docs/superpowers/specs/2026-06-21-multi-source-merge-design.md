@@ -88,8 +88,17 @@ export function mergeSources(lists: Channel[][]): Channel[]
   only missing** metadata (never override the first source's values). `streamUrls`
   is deduped and capped at `MAX_SOURCES` (4, imported from `enrich.ts`).
 - Unmatched keys are added as new channels (coverage).
-- Net effect: handles both within-source grouped backups and cross-source dupes
-  with one pass over the pooled entries.
+- **HTTPS upgrade:** every URL is passed through `httpsUpgrade(url)` (rewrite a
+  leading `http://` → `https://`) **before** union/dedup, so the stored
+  `streamUrls` are all `https`. Rationale: the app is served over HTTPS and the
+  browser hard-blocks `http://` streams, so a raw `http://` URL is always
+  unplayable; many servers serve the same path on TLS, so the upgrade recovers
+  that subset for free, and servers that don't speak TLS simply fail the connection
+  and the failover advances. Upgrading before dedup also collapses an
+  `http://x` + `https://x` pair into one. (The original `http://` is not kept — it
+  would only waste a `MAX_SOURCES` slot on a guaranteed-blocked URL.)
+- Net effect: handles within-source grouped backups, cross-source dupes, and
+  http→https upgrade in one pass over the pooled entries.
 
 ### 4. Per-source metadata defaults — applied in `source.ts` after parsing
 
@@ -97,19 +106,19 @@ For each parsed entry from a source: if `countries` is empty and the source has 
 `country`, set it; same for `language`; if `category === "Other"` (the fallback)
 and the source has a `category`, use it. Never override real parsed values.
 
-### 5. Adult safety — `isAdult(name, group)` in `merge.ts`
+### 5. Content selection
 
-Adult playlists are never in the registry. Defense-in-depth: drop any entry whose
-name or group-title matches an adult keyword regex, case-insensitive, with
-word-boundaries on short/ambiguous words to avoid false positives like "Sussex":
-`xxx`, `porn`, `adult`, `18+`, `\bsex\b`, `erotic`, `playboy`, `brazzers`,
-`hustler`. Applied during merge. (Exact final list locked in the plan.)
+No keyword adult-filter (dropped per decision). Adult content is avoided purely by
+source selection: the registry simply does not list atsushi444's `adult.m3u` /
+`xxx.m3u`, and the chosen sources are SFW by curation (iptv-org excludes NSFW from
+the public playlist; Free-TV bans adult content). A keyword filter can be added
+later if a future source warrants it.
 
 ### 6. Fetch & resilience — `src/lib/source.ts`
 
 ```
 fetch all SOURCES in parallel via Promise.allSettled
-  -> for each fulfilled: parseM3U(text), apply per-source defaults, drop isAdult
+  -> for each fulfilled: parseM3U(text), apply per-source defaults
   -> mergeSources(allLists)
   -> applyEnrichment(merged, enrichment)   // unchanged; keyed by iptv-org ids
   -> cache 1h
@@ -124,8 +133,8 @@ External-only channels keep their M3U logo + per-source defaults.
 ## Data flow
 
 ```
-SOURCES ─allSettled─▶ parseM3U + defaults + adult-filter (per source)
-       ─▶ mergeSources (identity union, cap 4) ─▶ applyEnrichment ─▶ cache ─▶ /api/channels
+SOURCES ─allSettled─▶ parseM3U + per-source defaults (per source)
+       ─▶ mergeSources (https-upgrade, identity union, cap 4) ─▶ applyEnrichment ─▶ cache ─▶ /api/channels
 ```
 
 ## Error handling & risks
@@ -136,8 +145,8 @@ SOURCES ─allSettled─▶ parseM3U + defaults + adult-filter (per source)
 | All sources fail | throw → existing "Could not load channels" UI |
 | Within-source grouped backups | captured (parseM3U no longer drops dup ids) |
 | Wrong channels merged | conservative identity (tvg-id, else name+country) |
-| Adult content | not registered + keyword filter |
-| **Mixed content** | HTTP-only streams (e.g. some Free-TV entries) are browser-blocked on our HTTPS deploy — can't fix client-side; HTTPS streams play. Known limitation. |
+| Adult content | avoided by source selection (adult playlists not registered; chosen sources are SFW-curated) |
+| **Mixed content** | `http://` URLs are auto-upgraded to `https://` (recovers TLS-capable servers for free); non-TLS servers fail the connection and the failover advances. Genuinely http-only-no-TLS streams stay unplayable in-browser — inherent browser limitation, no client-side fix (a server proxy was considered and rejected: infeasible/abuse-prone for live HLS on our infra). |
 | Quality/legality of community streams | accepted trade-off for coverage |
 | Cross-language dupes (JP/EN) | won't match → added as new (coverage, not backup) — expected |
 
@@ -147,10 +156,13 @@ SOURCES ─allSettled─▶ parseM3U + defaults + adult-filter (per source)
 - union URLs for same `tvg-id` across sources; deduped; capped at `MAX_SOURCES`.
 - merge by normalized name + same country; **no** merge across different countries.
 - within-source grouped backups (same id twice in one list) union into one channel.
+- `httpsUpgrade`: `http://x` becomes `https://x`; `https://` untouched; an
+  `http://x` + `https://x` pair collapses to a single `https://x` after dedup.
 - unmatched entries added as new channels.
 - first source wins metadata; later sources fill only missing fields.
 - `normalizeName` strips quality/resolution tokens.
-- `isAdult` drops flagged entries; does not false-positive on "Sussex"/"Essex".
+- `httpsUpgrade` rewrites `http://` → `https://`, leaves `https://` untouched, and
+  an `http`+`https` pair for the same path collapses to one after upgrade+dedup.
 
 `__tests__/m3u.test.ts` (update): `parseM3U` returns one entry per `#EXTINF`
 (no within-source de-dupe); the old keep-first assertion moves to merge tests.
