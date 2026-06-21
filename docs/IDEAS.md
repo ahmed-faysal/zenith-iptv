@@ -125,8 +125,10 @@ channels). These now-actionable items would improve it:
 
 ## Suggested order
 
-**Failover, multi-source merge, EPG, and deploy are all shipped.** Next:
-1. **mpegts.js fallback** (play non-HLS streams — see BACKLOG "Next up"), then
-2. **#19 alt_names search** → 3. **#10 Most Watched** → 4. **install on the LG (#13)**.
+**Failover, multi-source merge, EPG, and deploy are all shipped.** mpegts.js and
+`iptv-playlist-parser` were measured against the real catalogue and **dropped**
+(only 14 non-HLS URLs; the parser's only gain is header-gated unplayable streams —
+see BACKLOG "Measured & dropped"). Next:
+1. **#19 alt_names search** → 2. **#10 Most Watched** → 3. **install on the LG (#13)**.
 #30/#8/#16/#25 and the EPG enhancements are nice-to-haves to fold in
 opportunistically.

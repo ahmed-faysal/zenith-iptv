@@ -46,18 +46,30 @@ EPG, deployed to production.
 
 ## 🚧 Next up
 
-1. [ ] **mpegts.js playback fallback.** Some IPTV streams are raw MPEG-TS /
-   HTTP-FLV, which hls.js can't play — they currently dead-end as "Stream
-   unavailable". Add `mpegts.js` as a fallback player so those channels play
-   (playability/coverage win; from `4gray/iptvnator`, which pairs it with hls.js).
-   **NEXT.**
-2. [ ] **Robust M3U parsing via `iptv-playlist-parser`** (optional). The npm lib
-   (by the iptvnator author) handles more `#EXTINF` edge cases than our hand-rolled
-   `parseM3U` — useful for messy heterogeneous sources. Evaluate after mpegts.js.
-   (Supersedes the old "reference parsers" idea, #18.)
-3. [ ] **Install on the LG TV.** [webos/README.md](../webos/README.md): add
+1. [ ] **Install on the LG TV.** [webos/README.md](../webos/README.md): add
    placeholder icons, `ares-package webos/`, install the `.ipk` via the Homebrew
    Channel. (The only remaining deploy/device step.)
+
+Beyond that, see [IDEAS.md](IDEAS.md) for the ranked in-browser picks (alt_names
+search, "Most Watched", signal-quality chip).
+
+### Measured & dropped (2026-06-21)
+
+Both were queued, then measured against the real catalogue and dropped — recorded
+here so they aren't re-investigated:
+
+- **mpegts.js playback fallback — DROPPED.** Of 17,645 stream URLs in the live
+  catalogue, **95.1% are HLS (`.m3u8`)** and only **14 are `.ts`/`.flv`**
+  (0.08%). A second playback engine (~150 KB) for 14 channels isn't worth it.
+  Revisit only if a future source brings substantial MPEG-TS/FLV content.
+- **`iptv-playlist-parser` — SKIPPED.** Spiked against all four real sources: it
+  recovers **763 more iptv-org entries** than our `parseM3U`, but **100% of those
+  763 require `User-Agent`/`Referer` headers** (URL sits after `#EXTVLCOPT` lines)
+  — browser-forbidden headers (see rejected #24), so they can't play on our
+  target anyway. Our parser's "URL on the next line" behavior incidentally drops
+  exactly that unplayable set; the playable channel set is identical. Not worth a
+  dependency. (Closes the old "reference parsers" idea, #18.) **Do not "fix" the
+  parser to recover these — they'd be dead channels.**
 
 **Adding a source** is one line in `src/lib/sources.ts`. Vetted candidates
 (gitresearcher): ✅ Free-TV/IPTV and ✅ atsushi444 SFW lists are already in.
