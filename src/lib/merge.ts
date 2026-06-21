@@ -37,13 +37,18 @@ export function mergeSources(lists: Channel[][]): Channel[] {
       const existing = byKey.get(key);
       if (!existing) {
         order.push(key);
-        byKey.set(key, { ...c, streamUrls: capUrls(c.streamUrls.map(httpsUpgrade)) });
+        byKey.set(key, {
+          ...c,
+          streamUrls: capUrls(c.streamUrls.map(httpsUpgrade)),
+          languages: [...c.languages],
+          countries: [...c.countries],
+        });
         continue;
       }
       existing.streamUrls = capUrls([...existing.streamUrls, ...c.streamUrls.map(httpsUpgrade)]);
       if (!existing.logo && c.logo) existing.logo = c.logo;
-      if (existing.languages.length === 0 && c.languages.length) existing.languages = c.languages;
-      if (existing.countries.length === 0 && c.countries.length) existing.countries = c.countries;
+      if (existing.languages.length === 0 && c.languages.length) existing.languages = [...c.languages];
+      if (existing.countries.length === 0 && c.countries.length) existing.countries = [...c.countries];
       if (existing.category === "Other" && c.category !== "Other") existing.category = c.category;
     }
   }
