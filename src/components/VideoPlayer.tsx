@@ -29,9 +29,9 @@ export function VideoPlayer({
   const [status, setStatus] = useState<Status>("loading");
   // Distinct from `status`: a mid-playback stall while already playing.
   const [buffering, setBuffering] = useState(false);
-  const src = srcs[sourceIdx] ?? srcs[0];
 
   useEffect(() => {
+    const src = srcs[sourceIdx] ?? srcs[0];
     const video = videoRef.current;
     if (!video) return;
     setStatus("loading");
@@ -91,7 +91,7 @@ export function VideoPlayer({
       video.removeEventListener("loadeddata", onLoaded);
       video.removeEventListener("error", onErr);
     };
-  }, [src, sourceIdx, srcs, onLevels]);
+  }, [sourceIdx, srcs, onLevels]);
 
   // Buffering indicator: `waiting` stalls, `playing`/`canplay` resume. Native
   // media events, so they cover both the hls.js and Safari paths. Attached once.
