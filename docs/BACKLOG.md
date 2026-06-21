@@ -44,13 +44,53 @@ stream failover, branch `stream-fallback`).
 - [ ] **Install on the LG TV.** Follow [webos/README.md](../webos/README.md):
   add placeholder icons, `ares-package webos/`, install the `.ipk` via the
   Homebrew Channel.
-- [~] **Activate EPG ("now / next").** The plumbing exists (`/api/epg`, `useEpg`,
-  "Now · …" subtitle in the player) and a scheduled build is wired in
-  [`.github/workflows/epg.yml`](../.github/workflows/epg.yml). It stays dormant
-  until the Action publishes a `guide.xml.gz` to the `epg` branch and
-  `EPG_GUIDE_URL` is set in Vercel. **Open tuning:** the grabber is slow/OOM-prone
-  against all channels — scope `EPG_COUNTRIES` (e.g. `US,GB,CA,AU,IN,AE`) to keep
-  the run small. Background + source research in the EPG section below.
+- [~] **Activate EPG ("now / next") — READY, just needs the env var.** The
+  scheduled Action is healthy: the `epg` branch is force-pushed every ~6h, the
+  `guide.xml.gz` is ~17 MB and current (verified 2026-06-21). Parsed locally it
+  yields **2,895 channels with schedules / ~2,859 with a live "now" programme**,
+  in ~430 ms — well within serverless limits, and ids are in iptv-org
+  `Name.CountryCode` convention so they match our channels. The route already
+  degrades gracefully to `{}` on any error, so flipping it on cannot break the
+  app. **To activate:** set
+  `EPG_GUIDE_URL=https://raw.githubusercontent.com/ahmed-faysal/zenith-iptv/epg/guide.xml.gz`
+  in Vercel (and `.env.local` for dev), then redeploy. The earlier OOM concern was
+  the CI grabber, which is now working; `EPG_COUNTRIES` scoping is optional tuning,
+  no longer a blocker.
+
+---
+
+## 🚧 Planned — building one by one (multi-source coverage)
+
+Goal: broaden channel coverage (and reliability) by merging several M3U sources,
+plus play stream formats we currently can't. Source vetting was done via
+gitresearcher (see knowledge base). Build in this order:
+
+1. **Multi-source playlist merge** (designing now). Merge a curated registry of
+   M3U sources behind the existing `/api/channels` seam: parse each, apply
+   per-source metadata defaults, and union by channel identity (exact `tvg-id`,
+   else normalized name + country) so the same channel across sources contributes
+   **backup URLs** (feeds the failover, capped at `MAX_SOURCES`); unmatched
+   entries broaden coverage. `Promise.allSettled` so a dead source is skipped.
+   Adult playlists are never registered + a keyword safety filter. **Within-source
+   URL union too** (some sources group multiple URLs per channel). Starting
+   registry: **iptv-org** (canonical) → **Free-TV/IPTV** (curated, no-adult,
+   daily-updated, iptv-org-style ids → real backup merges) → **atsushi444
+   `jp.m3u`** (JP) → **atsushi444 `tv.m3u`**. Spec to be written.
+2. **mpegts.js playback fallback.** Some IPTV streams are raw MPEG-TS / HTTP-FLV,
+   which hls.js can't play — they currently dead-end as "Stream unavailable". Add
+   `mpegts.js` as a fallback player so those channels play (playability/coverage
+   win; surfaced from `4gray/iptvnator`, which pairs it with hls.js).
+3. **Robust M3U parsing via `iptv-playlist-parser`** (optional). The npm lib (by
+   the iptvnator author) handles more `#EXTINF` edge cases than our hand-rolled
+   `parseM3U` — useful for messy heterogeneous sources. Evaluate adopting it once
+   the merge is in. (Supersedes the old "reference parsers" idea, #18.)
+
+**Vetted sources (gitresearcher):** ✅ Free-TV/IPTV (add), ✅ atsushi444 SFW lists
+(add, coverage-only — JP ids don't match iptv-org). ❌ joevess/IPTV (dead, 0
+channels). ❌ HerbertHe/iptv-sources (self-host service, fragile personal
+endpoint, China-centric, stale). ❌ 4gray/iptvnator (a player, ships no
+channels — but source of the mpegts.js / parser ideas above). Future Xtream
+Codes / Stalker portal support (account-based sources) also noted from iptvnator.
 
 ---
 
@@ -79,9 +119,9 @@ Parked from the original spec
 - [ ] **Catchup / TV-archive** — parse `catchup` / `catchup-source` from `#EXTINF`
   to rewind live programming where supported.
 - [ ] **PWA install** — manifest + service worker for clean phone install.
-- [ ] **Multi-source playlist merge** — combine/curate multiple M3U sources behind
-  the existing `/api/channels` seam.
 - [ ] **Multi-view** — watch several channels at once (cut from v1).
+- [ ] **Xtream Codes / Stalker portal sources** — account-based source category
+  (from `4gray/iptvnator`); lets users add premium/portal providers beyond M3U.
 - [ ] **Cloudflare Pages migration** — only if the app ever goes commercial/public
   (Vercel free tier prohibits commercial use).
 
