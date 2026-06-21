@@ -1,8 +1,13 @@
 # Stream Fallback — Design
 
 **Date:** 2026-06-21
-**Status:** Approved (brainstorming) — pending implementation
+**Status:** Implemented on branch `stream-fallback`
 **Branch:** `stream-fallback`
+
+> **Post-implementation note:** actuals ran higher than the estimates below —
+> **2,287** channels carry alternates (est. ~1,800) and the artifact grew by
+> ~1 MB to 2.1 MB (est. ~+300 KB), because the cap-4 collection captured more
+> per channel than projected. Benign; not a regression.
 
 ## Problem
 

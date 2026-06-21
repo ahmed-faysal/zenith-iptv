@@ -22,6 +22,10 @@ driven entirely by a TV remote's D-pad — no mouse or keyboard required.
   volume/mute, fullscreen). No scrubber — the streams are live. **Back** returns
   to wherever you came from (history-aware), so leaving a channel opened from
   Sports lands you back on the Sports page.
+  - **Automatic source failover** — many channels publish more than one stream;
+    when one is dead the player silently tries the next ("Trying another source…")
+    before showing "Stream unavailable", so a dead primary no longer dead-ends a
+    channel that has a working backup.
 - **Search** (`/search`) — live name search over the full catalogue, fully
   remote-navigable.
 - **Settings** — slide-in sidebar to filter the catalogue by language/country

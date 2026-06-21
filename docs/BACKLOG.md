@@ -5,7 +5,8 @@ that used to live here is now in git history (`git log`). This file tracks only
 what's **still open** plus the research worth keeping.
 
 Last reviewed: 2026-06-21 (holistic review — unified browse views, fixed category
-grid D-pad nav, removed dead ChannelSidebar, refreshed docs).
+grid D-pad nav, removed dead ChannelSidebar, refreshed docs; then added automatic
+stream failover, branch `stream-fallback`).
 
 ---
 
@@ -19,10 +20,18 @@ grid D-pad nav, removed dead ChannelSidebar, refreshed docs).
   focus on every screen; webOS Back (keyCode 461) handled.
 - **Player** — glassy auto-hiding overlay: Back, LIVE, name, quality picker,
   clock, center play/pause, favorite, volume/mute, fullscreen. No scrubber (live).
+  Automatic **source failover**: each channel carries up to 4 stream URLs and the
+  player advances to the next when one fails (see below).
 - **Data** — iptv-org M3U behind `/api/channels`, merged with a build-time
-  `enrichment.json` (canonical category, reliable country, best logo, quality).
-  See [enrichment spec](superpowers/specs/2026-06-19-channels-json-enrichment-design.md).
-- **Tests** — 150 passing; lint + production build clean.
+  `enrichment.json` (canonical category, reliable country, best logo, quality, and
+  alternate stream URLs). See the
+  [enrichment spec](superpowers/specs/2026-06-19-channels-json-enrichment-design.md)
+  and [stream-fallback spec](superpowers/specs/2026-06-21-stream-fallback-design.md).
+- **Stream failover** — `Channel.streamUrls: string[]` (M3U primary first, then
+  iptv-org `streams.json` alternates, deduped, capped at 4). 2,287 channels carry
+  a backup; the player tries them in order, surfacing "Stream unavailable" only
+  when all are exhausted.
+- **Tests** — 157 passing; lint + production build clean.
 
 ---
 
