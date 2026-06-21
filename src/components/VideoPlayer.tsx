@@ -2,17 +2,19 @@
 import { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
 import type { Level } from "./QualitySelector";
-import { hlsConfig, planRecovery, type FatalKind, type RecoveryState } from "@/lib/player";
+import { hlsConfig, planRecovery, nextSource, type FatalKind, type RecoveryState } from "@/lib/player";
 
 type Status = "loading" | "playing" | "error";
 
 // Playback surface only. Play/pause, volume, and quality are driven by props so
-// the PlayerOverlay (a single control surface) owns the UI; VideoPlayer just
-// reflects intent onto the <video>/hls instance and reports available levels up.
+// the PlayerOverlay owns the UI. Given several candidate URLs for the channel,
+// it plays the first and silently advances to the next when one fails — only
+// showing "Stream unavailable" once every source is exhausted. Keyed by channel
+// id upstream, so it remounts (source index back to 0) on a channel change.
 export function VideoPlayer({
-  src, paused = false, volume = 1, muted = false, currentLevel = -1, onLevels,
+  srcs, paused = false, volume = 1, muted = false, currentLevel = -1, onLevels,
 }: {
-  src: string;
+  srcs: string[];
   paused?: boolean;
   volume?: number;
   muted?: boolean;
@@ -21,30 +23,34 @@ export function VideoPlayer({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
-  // Bounded fatal-error recovery budget; reset per channel + on successful play.
+  // Bounded fatal-error recovery budget; reset per source + on successful play.
   const recovery = useRef<RecoveryState>({ network: 0, media: 0 });
+  const [sourceIdx, setSourceIdx] = useState(0);
   const [status, setStatus] = useState<Status>("loading");
-  // Distinct from `status`: a mid-playback stall (network hiccup on a live
-  // stream) while already playing. The initial load shows "Loading…" via
-  // `status`, so we only surface the spinner once playback has started.
+  // Distinct from `status`: a mid-playback stall while already playing.
   const [buffering, setBuffering] = useState(false);
-
-  // Hard cap: if the stream hasn't started within 15s, give up. Covers
-  // unresponsive servers that never fire an error (hls.js stays silent).
-  useEffect(() => {
-    const t = setTimeout(
-      () => setStatus((s) => (s === "loading" ? "error" : s)),
-      15_000,
-    );
-    return () => clearTimeout(t);
-  }, [src]);
+  const src = srcs[sourceIdx] ?? srcs[0];
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
     setStatus("loading");
     setBuffering(false);
-    recovery.current = { network: 0, media: 0 }; // fresh budget per channel
+    recovery.current = { network: 0, media: 0 };
+    // A source that fails before it ever starts is dead -> advance immediately;
+    // one that dies mid-playback gets planRecovery first.
+    let started = false;
+
+    // Move to the next source, or surface the error when none are left.
+    const fail = () => {
+      const next = nextSource(sourceIdx, srcs.length);
+      if (next === null) setStatus("error");
+      else setSourceIdx(next);
+    };
+
+    // Hard cap: a source that neither plays nor errors within 15s is treated as
+    // dead (covers servers that accept the connection but never respond).
+    const timer = setTimeout(() => { if (!started) fail(); }, 15_000);
 
     if (Hls.isSupported()) {
       const hls = new Hls(hlsConfig());
@@ -53,13 +59,13 @@ export function VideoPlayer({
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, (_e, data) => {
         onLevels?.(data.levels.map((l) => ({ height: l.height })));
-        video.play().then(() => setStatus("playing")).catch(() => {});
+        video.play().then(() => { started = true; setStatus("playing"); }).catch(() => {});
       });
       // A buffered fragment means recovery (if any) worked — refresh the budget.
       hls.on(Hls.Events.FRAG_BUFFERED, () => { recovery.current = { network: 0, media: 0 }; });
-      // Fatal errors: try a bounded recovery before surfacing "unavailable".
       hls.on(Hls.Events.ERROR, (_e, data) => {
         if (!data.fatal) return; // non-fatal errors self-heal
+        if (!started) { fail(); return; } // dead source -> next source
         const kind: FatalKind =
           data.type === Hls.ErrorTypes.NETWORK_ERROR ? "network"
           : data.type === Hls.ErrorTypes.MEDIA_ERROR ? "media"
@@ -68,22 +74,27 @@ export function VideoPlayer({
         recovery.current = state;
         if (action === "restartLoad") hls.startLoad();
         else if (action === "recoverMedia") hls.recoverMediaError();
-        else setStatus("error");
+        else fail();
       });
-      return () => { hls.destroy(); hlsRef.current = null; };
+      return () => { clearTimeout(timer); hls.destroy(); hlsRef.current = null; };
     }
 
     // Safari / native HLS
     video.src = src;
-    video.addEventListener("loadeddata", () => setStatus("playing"));
-    video.addEventListener("error", () => setStatus("error"));
+    const onLoaded = () => { started = true; setStatus("playing"); };
+    const onErr = () => fail();
+    video.addEventListener("loadeddata", onLoaded);
+    video.addEventListener("error", onErr);
     video.play().catch(() => {});
-  }, [src, onLevels]);
+    return () => {
+      clearTimeout(timer);
+      video.removeEventListener("loadeddata", onLoaded);
+      video.removeEventListener("error", onErr);
+    };
+  }, [src, sourceIdx, srcs, onLevels]);
 
-  // Buffering indicator: `waiting` fires when playback stalls for data;
-  // `playing`/`canplay` signal it has resumed. These are native media events,
-  // so they cover both the hls.js and Safari paths. Attached once — the
-  // <video> element is stable across src changes.
+  // Buffering indicator: `waiting` stalls, `playing`/`canplay` resume. Native
+  // media events, so they cover both the hls.js and Safari paths. Attached once.
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -123,7 +134,9 @@ export function VideoPlayer({
   return (
     <div style={{ position: "absolute", inset: 0, background: "#000" }}>
       <video ref={videoRef} style={{ width: "100%", height: "100%" }} controls={false} />
-      {status === "loading" && <Centered>Loading…</Centered>}
+      {status === "loading" && (
+        <Centered>{sourceIdx > 0 ? "Trying another source…" : "Loading…"}</Centered>
+      )}
       {status === "error" && <Centered>Stream unavailable — try another channel</Centered>}
       {status === "playing" && buffering && (
         <Centered><span className="ltv-spinner" role="status" aria-label="Buffering" /></Centered>
