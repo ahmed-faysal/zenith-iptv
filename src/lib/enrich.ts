@@ -7,6 +7,12 @@ export type RawLogo = {
   width: number; height: number; format: string; url: string;
 };
 
+// Max stream URLs kept per channel (1 primary + up to 3 backups). Caps the
+// stored artifact and the player's failover attempts.
+export const MAX_SOURCES = 4;
+
+const dedupe = (arr: string[]): string[] => [...new Set(arr)];
+
 const FORMAT_RANK: Record<string, number> = { SVG: 3, WEBP: 2, PNG: 1 };
 
 // Best logo URL for a channel: in-use first, then format (SVG scales for TV),
@@ -23,11 +29,27 @@ export function bestLogo(logos: RawLogo[], feed?: string | null): string | undef
 }
 
 export type RawChannel = { id: string; country: string | null; categories: string[]; languages: string[] };
-export type RawStream = { channel: string | null; feed: string | null; quality: string | null };
-export type EnrichmentEntry = { category?: AppCategory; country?: string; logo?: string; quality?: string; languages?: string[] };
+export type RawStream = { channel: string | null; feed: string | null; url: string; quality: string | null };
+export type EnrichmentEntry = { category?: AppCategory; country?: string; logo?: string; quality?: string; languages?: string[]; urls?: string[] };
 export type EnrichmentMap = Record<string, EnrichmentEntry>;
 
 const feedOf = (id: string): string | null => (id.includes("@") ? id.split("@")[1] : null);
+
+// URLs for a channel, same-feed first (the M3U id's @feed), then others as
+// backups; deduped and capped. Other/null-feed streams are still valid backups.
+function collectUrls(streams: RawStream[], feed: string | null): string[] {
+  const ordered = [
+    ...streams.filter((s) => feed != null && s.feed === feed),
+    ...streams.filter((s) => feed == null || s.feed !== feed),
+  ];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const s of ordered) {
+    if (s.url && !seen.has(s.url)) { seen.add(s.url); out.push(s.url); }
+    if (out.length >= MAX_SOURCES) break;
+  }
+  return out;
+}
 
 export function buildEnrichment(
   m3uIds: string[], channels: RawChannel[], logos: RawLogo[], streams: RawStream[],
@@ -42,6 +64,13 @@ export function buildEnrichment(
   const streamByKey = new Map<string, RawStream>();
   for (const s of streams) {
     if (s.channel) streamByKey.set(`${s.channel}@${s.feed ?? ""}`, s);
+  }
+  const streamsByChannel = new Map<string, RawStream[]>();
+  for (const s of streams) {
+    if (!s.channel) continue;
+    const arr = streamsByChannel.get(s.channel) ?? [];
+    arr.push(s);
+    streamsByChannel.set(s.channel, arr);
   }
 
   const map: EnrichmentMap = {};
@@ -58,6 +87,8 @@ export function buildEnrichment(
     if (logo) entry.logo = logo;
     const quality = streamByKey.get(`${base}@${feed ?? ""}`)?.quality;
     if (quality) entry.quality = quality;
+    const urls = collectUrls(streamsByChannel.get(base) ?? [], feed);
+    if (urls.length) entry.urls = urls;
     if (ch.languages?.length) entry.languages = ch.languages;
     if (Object.keys(entry).length) map[id] = entry;
   }
@@ -71,6 +102,9 @@ export function applyEnrichment(channels: Channel[], map: EnrichmentMap): Channe
   return channels.map((c) => {
     const e = map[c.id];
     if (!e) return c;
+    const streamUrls = e.urls?.length
+      ? dedupe([...c.streamUrls, ...e.urls]).slice(0, MAX_SOURCES)
+      : c.streamUrls;
     return {
       ...c,
       category: e.category ?? c.category,
@@ -78,6 +112,7 @@ export function applyEnrichment(channels: Channel[], map: EnrichmentMap): Channe
       languages: e.languages?.length ? e.languages : c.languages,
       logo: e.logo ?? c.logo,
       quality: e.quality ?? c.quality,
+      streamUrls,
     };
   });
 }
