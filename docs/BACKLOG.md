@@ -39,14 +39,30 @@ EPG, deployed to production.
   [spec](superpowers/specs/2026-06-18-epg-revival.md).
 - **Deployed** — `zenith-iptv.vercel.app` (Vercel; production from `main`; the
   `epg` data branch is excluded from deploys via `vercel.json`).
-- **Tests** — 180 passing; lint clean (one pre-existing `<img>` warning) +
-  production build clean.
+- **Tests** — app 199 passing + worker 14; lint clean (one pre-existing `<img>`
+  warning) + production build clean.
 
 ---
 
 ## 🚧 Next up
 
-1. [ ] **Install on the LG TV.** [webos/README.md](../webos/README.md): add
+1. [~] **Activate the stream proxy — BUILT, dormant; needs a Worker deploy + env.**
+   A Cloudflare Worker HLS/CORS proxy (`worker/`) recovers the ~14% of channels
+   that fail in-browser on mixed-content / missing CORS (mostly sports). Merged to
+   `main` but **off** until configured (degrades off cleanly via
+   `NEXT_PUBLIC_STREAM_PROXY_ENABLED`). The player routes failing channels through
+   a same-origin `/api/proxy` (HMAC-signed, catalogue-scoped) → the Worker. **To
+   activate:** `cd worker && wrangler secret put STREAM_PROXY_SECRET && wrangler
+   deploy`; then in Vercel set `STREAM_PROXY_SECRET` (same), `STREAM_PROXY_WORKER_URL`
+   (server-only), and `NEXT_PUBLIC_STREAM_PROXY_ENABLED=1`; redeploy; verify a
+   known http/CORS channel (e.g. Fox Sports) plays.
+   [spec](superpowers/specs/2026-06-22-stream-proxy-design.md).
+2. [ ] **EPG match / keyword search** ("what's on now"). Design ready (parked
+   when the proxy work started): one search box, sectioned results — channel-name
+   matches + an "On now / next" section over the EPG titles; pure client-side over
+   the loaded `useEpg` map; a `ProgrammeRow` + a `subtitle` on `ChannelCard`. The
+   proxy makes its results more likely to actually play.
+3. [ ] **Install on the LG TV.** [webos/README.md](../webos/README.md): add
    placeholder icons, `ares-package webos/`, install the `.ipk` via the Homebrew
    Channel. (The only remaining deploy/device step.)
 
