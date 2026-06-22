@@ -26,12 +26,20 @@ function rateLimited(ip: string): boolean {
   return e.count > MAX_PER_WINDOW;
 }
 
+function requestOrigin(req: NextRequest): string {
+  const origin = req.headers.get("origin");
+  if (origin) return origin;
+  const referer = req.headers.get("referer");
+  if (referer) { try { return new URL(referer).origin; } catch { /* malformed */ } }
+  return "";
+}
+
 export async function GET(req: NextRequest) {
   const channels = await getChannels().catch(() => [] as Channel[]);
   const ip = (req.headers.get("x-forwarded-for") ?? "anon").split(",")[0].trim();
   const res = await decideProxy({
     target: req.nextUrl.searchParams.get("url"),
-    origin: req.headers.get("origin") ?? req.headers.get("referer") ?? "",
+    origin: requestOrigin(req),
     self: req.nextUrl.origin,
     channelUrls: channelUrlSet(channels),
     secret: process.env.STREAM_PROXY_SECRET,
