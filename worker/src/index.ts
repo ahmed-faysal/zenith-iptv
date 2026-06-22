@@ -74,10 +74,12 @@ export default {
 
     const u = new URL(request.url);
     const target = u.searchParams.get("url");
-    const exp = Number(u.searchParams.get("exp"));
-    const sig = u.searchParams.get("sig") ?? "";
-    if (!target || !exp || !sig) return new Response("bad request", { status: 400 });
-    if (exp < Date.now()) return new Response("expired", { status: 403 });
+    const expParam = u.searchParams.get("exp");
+    const exp = expParam !== null ? Number(expParam) : NaN;
+    const sig = u.searchParams.get("sig");
+    if (!target || Number.isNaN(exp) || !sig) return new Response("bad request", { status: 400 });
+    const now = Date.now();
+    if (exp < now) return new Response("expired", { status: 403 });
     if (!(await verify(target, exp, sig, env.STREAM_PROXY_SECRET))) return new Response("forbidden", { status: 403 });
 
     const range = request.headers.get("Range");
@@ -85,13 +87,17 @@ export default {
     const ct = upstream.headers.get("content-type") ?? "";
 
     if (isManifest(upstream.url || target, ct)) {
-      const body = await rewriteManifest(await upstream.text(), upstream.url || target, self, env.STREAM_PROXY_SECRET, Date.now(), 12 * 60 * 60 * 1000);
+      const body = await rewriteManifest(await upstream.text(), upstream.url || target, self, env.STREAM_PROXY_SECRET, now, 12 * 60 * 60 * 1000);
       const h = cors(new Headers());
       h.set("content-type", "application/vnd.apple.mpegurl");
       return new Response(body, { status: 200, headers: h });
     }
 
-    const h = cors(new Headers(upstream.headers));
+    const h = cors(new Headers());
+    for (const k of ["content-type", "content-length", "content-range", "accept-ranges", "cache-control"]) {
+      const v = upstream.headers.get(k);
+      if (v) h.set(k, v);
+    }
     return new Response(upstream.body, { status: upstream.status, headers: h });
   },
 };
