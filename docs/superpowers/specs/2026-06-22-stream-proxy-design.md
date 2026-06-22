@@ -149,6 +149,16 @@ as an open relay for arbitrary URLs. The residual surface is someone replaying a
 captured signed URL until it expires, or hitting our rate-limited `/api/proxy`
 for catalogue URLs — both low-impact at personal scale.
 
+**Residual SSRF (accepted):** the Worker self-signs the child segment/key URLs it
+parses out of a fetched manifest, so a catalogue stream serving a *malicious*
+manifest could point the Worker at other URLs reachable from Cloudflare's egress.
+This is inherent to proxying HLS (a manifest legitimately references segments on
+other hosts, so we can't host-allowlist children). Mitigations: the Worker blocks
+private/loopback/link-local hosts (`isBlockedHost`) before any fetch, and
+Cloudflare's egress can't reach cloud-metadata/internal networks; the remaining
+"public relay seeded by a malicious catalogue manifest" risk is accepted at
+personal scale (low value to an attacker, rate-limited, no internal reach).
+
 ## Testing
 
 - **`__tests__/proxy-sign.test.ts`:** `sign`/`verify` round-trip; tampered url/exp
