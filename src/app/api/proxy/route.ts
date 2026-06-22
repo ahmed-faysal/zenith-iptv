@@ -28,7 +28,7 @@ function rateLimited(ip: string): boolean {
 
 export async function GET(req: NextRequest) {
   const channels = await getChannels().catch(() => [] as Channel[]);
-  const ip = req.headers.get("x-forwarded-for") ?? "anon";
+  const ip = (req.headers.get("x-forwarded-for") ?? "anon").split(",")[0].trim();
   const res = await decideProxy({
     target: req.nextUrl.searchParams.get("url"),
     origin: req.headers.get("origin") ?? req.headers.get("referer") ?? "",

@@ -19,7 +19,7 @@ const DEFAULT_TTL = 12 * 60 * 60 * 1000;
 // else 302 to the worker with an HMAC-signed (url, exp).
 export async function decideProxy(i: GateInput): Promise<GateResult> {
   if (!i.secret || !i.workerUrl) return { status: 503, body: "proxy disabled" };
-  if (i.origin && !i.origin.startsWith(i.self)) return { status: 403, body: "forbidden" };
+  if (i.origin && i.origin !== i.self) return { status: 403, body: "forbidden" };
   if (!i.target) return { status: 400, body: "missing url" };
   if (!i.channelUrls.has(i.target)) return { status: 403, body: "unknown url" };
   if (i.limited) return { status: 429, body: "rate limited" };

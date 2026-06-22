@@ -35,4 +35,16 @@ describe("decideProxy", () => {
     expect(r.location).toMatch(/exp=1001000/);
     expect(r.location).toMatch(/sig=[0-9a-f]{64}/);
   });
+  it("400 when target is missing", async () => {
+    const r = await decideProxy({ ...base, target: null, origin: "https://app.example" });
+    expect(r.status).toBe(400);
+  });
+  it("503 when only workerUrl is unset", async () => {
+    const r = await decideProxy({ ...base, workerUrl: undefined, target: "https://real/a.m3u8", origin: "https://app.example" });
+    expect(r.status).toBe(503);
+  });
+  it("403 for a sibling-prefix origin (origin bypass regression)", async () => {
+    const r = await decideProxy({ ...base, target: "https://real/a.m3u8", origin: "https://app.example.evil.com", self: "https://app.example" });
+    expect(r.status).toBe(403);
+  });
 });
