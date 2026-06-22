@@ -1,0 +1,13 @@
+{
+  "name": "zenith-stream-proxy",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.9",
+    "wrangler": "^3"
+  }
+}

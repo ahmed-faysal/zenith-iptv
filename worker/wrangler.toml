@@ -1,0 +1,6 @@
+name = "zenith-stream-proxy"
+main = "src/index.ts"
+compatibility_date = "2026-06-01"
+
+# secret: set via `wrangler secret put STREAM_PROXY_SECRET`
+# (CORS is `*` — the HMAC signature is the guard, not the Worker's CORS origin.)
