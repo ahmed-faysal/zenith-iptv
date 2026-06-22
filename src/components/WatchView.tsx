@@ -10,6 +10,7 @@ import { useGridFocus } from "@/hooks/useGridFocus";
 import { isBackKey, mediaAction } from "@/lib/keys";
 import { baseChannelId } from "@/lib/epg";
 import { setLastChannel, pushRecent, toggleFavorite, isFavorite } from "@/lib/storage";
+import { expandPlaybackUrls } from "@/lib/playback-urls";
 
 export function WatchView({ channelId }: { channelId: string }) {
   const router = useRouter();
@@ -17,6 +18,7 @@ export function WatchView({ channelId }: { channelId: string }) {
   const channels = loaded ?? [];
   const epg = useEpg();
   const active = channels.find((c) => c.id === channelId) ?? null;
+  const proxyEnabled = process.env.NEXT_PUBLIC_STREAM_PROXY_ENABLED === "1";
   const nowPlaying = active ? epg[baseChannelId(active.id)]?.now : undefined;
   const subtitle = nowPlaying ? `Now · ${nowPlaying.title}` : active?.category;
 
@@ -101,7 +103,7 @@ export function WatchView({ channelId }: { channelId: string }) {
     <div ref={containerRef} style={{ position: "fixed", inset: 0, background: "#000" }}>
       <VideoPlayer
         key={active.id}
-        srcs={active.streamUrls}
+        srcs={expandPlaybackUrls(active.streamUrls, proxyEnabled)}
         paused={paused}
         volume={volume}
         muted={muted}
