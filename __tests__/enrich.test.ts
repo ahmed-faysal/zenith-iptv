@@ -74,12 +74,12 @@ describe("applyEnrichment", () => {
     expect(out[0].streamUrls).toEqual(["only"]);
   });
 
-  it("upgrades http alternate URLs to https when merging enrichment", () => {
+  it("appends alternate URLs as-is (originals, no upgrade)", () => {
     const out = applyEnrichment(
       [chan({ streamUrls: ["https://primary"] })],
       { "CNN.us@HD": { urls: ["http://alt-1", "https://alt-2"] } },
     );
-    expect(out[0].streamUrls).toEqual(["https://primary", "https://alt-1", "https://alt-2"]);
+    expect(out[0].streamUrls).toEqual(["https://primary", "http://alt-1", "https://alt-2"]);
   });
 });
 

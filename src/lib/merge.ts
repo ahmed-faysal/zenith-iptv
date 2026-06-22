@@ -1,6 +1,6 @@
 import type { Channel } from "./types";
-import { MAX_SOURCES, httpsUpgrade } from "./enrich";
-export { httpsUpgrade };
+import { MAX_SOURCES } from "./enrich";
+import { unwrapProxy } from "./playback-urls";
 
 // Normalize a name for fuzzy cross-source identity: lowercase, drop
 // resolution/quality tokens and non-alphanumerics ("ESPN HD" -> "espn").
@@ -18,12 +18,13 @@ export function identityKey(c: Channel): string {
 }
 
 function capUrls(urls: string[]): string[] {
-  return [...new Set(urls)].slice(0, MAX_SOURCES);
+  return [...new Set(urls.map(unwrapProxy))].slice(0, MAX_SOURCES);
 }
 
 // Merge channels from several sources (priority order) into one catalogue. Same
-// identity -> one channel; streamUrls = union (https-upgraded, deduped, capped).
-// First source wins metadata; later ones fill only blank fields.
+// identity -> one channel; streamUrls = union of ORIGINAL urls (third-party
+// proxies unwrapped, deduped, capped). First source wins metadata; later ones
+// fill only blank fields. Scheme/proxy decisions happen later in playback-urls.
 export function mergeSources(lists: Channel[][]): Channel[] {
   const byKey = new Map<string, Channel>();
   const order: string[] = [];
@@ -35,13 +36,13 @@ export function mergeSources(lists: Channel[][]): Channel[] {
         order.push(key);
         byKey.set(key, {
           ...c,
-          streamUrls: capUrls(c.streamUrls.map(httpsUpgrade)),
+          streamUrls: capUrls(c.streamUrls),
           languages: [...c.languages],
           countries: [...c.countries],
         });
         continue;
       }
-      existing.streamUrls = capUrls([...existing.streamUrls, ...c.streamUrls.map(httpsUpgrade)]);
+      existing.streamUrls = capUrls([...existing.streamUrls, ...c.streamUrls]);
       if (!existing.logo && c.logo) existing.logo = c.logo;
       if (existing.languages.length === 0 && c.languages.length) existing.languages = [...c.languages];
       if (existing.countries.length === 0 && c.countries.length) existing.countries = [...c.countries];

@@ -2,12 +2,6 @@ import { canonicalCategory } from "./categories";
 import { baseChannelId } from "./epg";
 import type { AppCategory, Channel } from "./types";
 
-// http:// streams are blocked by the browser on our HTTPS origin; upgrade to
-// https:// so TLS-capable servers play (others fail and the player fails over).
-export function httpsUpgrade(url: string): string {
-  return url.startsWith("http://") ? "https://" + url.slice("http://".length) : url;
-}
-
 export type RawLogo = {
   channel: string; feed: string | null; in_use: boolean; tags: string[];
   width: number; height: number; format: string; url: string;
@@ -109,7 +103,7 @@ export function applyEnrichment(channels: Channel[], map: EnrichmentMap): Channe
     const e = map[c.id];
     if (!e) return c;
     const streamUrls = e.urls?.length
-      ? dedupe([...c.streamUrls, ...e.urls.map(httpsUpgrade)]).slice(0, MAX_SOURCES)
+      ? dedupe([...c.streamUrls, ...e.urls]).slice(0, MAX_SOURCES)
       : c.streamUrls;
     return {
       ...c,

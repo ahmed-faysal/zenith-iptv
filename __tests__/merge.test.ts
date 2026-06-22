@@ -1,19 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { httpsUpgrade, normalizeName, identityKey, mergeSources } from "@/lib/merge";
+import { normalizeName, identityKey, mergeSources } from "@/lib/merge";
 import type { Channel } from "@/lib/types";
 
 const ch = (o: Partial<Channel>): Channel => ({
   id: "X", name: "X", logo: "", streamUrls: ["https://x"],
   category: "Other", languages: [], countries: [], quality: null, ...o,
-});
-
-describe("httpsUpgrade", () => {
-  it("upgrades http to https", () => {
-    expect(httpsUpgrade("http://a/b.m3u8")).toBe("https://a/b.m3u8");
-  });
-  it("leaves https untouched", () => {
-    expect(httpsUpgrade("https://a/b.m3u8")).toBe("https://a/b.m3u8");
-  });
 });
 
 describe("normalizeName", () => {
@@ -73,11 +64,12 @@ describe("mergeSources", () => {
     expect(out[0].streamUrls).toEqual(["https://1", "https://2"]);
   });
 
-  it("https-upgrades urls before union (http+https for same path collapse)", () => {
-    const a = [ch({ id: "CNN.us", streamUrls: ["http://x/a"] })];
-    const b = [ch({ id: "CNN.us", streamUrls: ["https://x/a"] })];
+  it("unwraps a third-party proxy before union (wrapped + underlying collapse)", () => {
+    const a = [ch({ id: "CNN.us", streamUrls: ["https://cors-proxy.cooks.fyi/http://x/a"] })];
+    const b = [ch({ id: "CNN.us", streamUrls: ["http://x/a"] })];
     const out = mergeSources([a, b]);
-    expect(out[0].streamUrls).toEqual(["https://x/a"]);
+    expect(out).toHaveLength(1);
+    expect(out[0].streamUrls).toEqual(["http://x/a"]);
   });
 
   it("adds unmatched channels as new entries", () => {
