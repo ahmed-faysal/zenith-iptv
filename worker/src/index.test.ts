@@ -1,7 +1,23 @@
 import { describe, it, expect } from "vitest";
-import { sign, verify, isManifest, rewriteManifest } from "./index";
+import { sign, verify, isManifest, rewriteManifest, isBlockedHost } from "./index";
 
 const SECRET = "s";
+
+describe("isBlockedHost", () => {
+  // Blocked hosts
+  it("blocks IPv4 loopback", () => expect(isBlockedHost("127.0.0.1")).toBe(true));
+  it("blocks localhost", () => expect(isBlockedHost("localhost")).toBe(true));
+  it("blocks 10.x private", () => expect(isBlockedHost("10.0.0.5")).toBe(true));
+  it("blocks 192.168.x private", () => expect(isBlockedHost("192.168.1.1")).toBe(true));
+  it("blocks 172.16.x private", () => expect(isBlockedHost("172.16.0.1")).toBe(true));
+  it("blocks link-local 169.254.x", () => expect(isBlockedHost("169.254.169.254")).toBe(true));
+  it("blocks IPv6 loopback ::1", () => expect(isBlockedHost("::1")).toBe(true));
+  it("blocks IPv6 link-local fe80::1", () => expect(isBlockedHost("fe80::1")).toBe(true));
+  // Allowed hosts
+  it("allows public hostname", () => expect(isBlockedHost("cdn.example.com")).toBe(false));
+  it("allows public IPv4 1.2.3.4", () => expect(isBlockedHost("1.2.3.4")).toBe(false));
+  it("allows public DNS IPv4 8.8.8.8", () => expect(isBlockedHost("8.8.8.8")).toBe(false));
+});
 
 describe("worker hmac parity", () => {
   it("verifies what it signs", async () => {

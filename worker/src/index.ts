@@ -23,6 +23,41 @@ export async function verify(url: string, exp: number, sig: string, secret: stri
   return diff === 0;
 }
 
+export function isBlockedHost(hostname: string): boolean {
+  // Strip IPv6 brackets: [::1] → ::1
+  const h = hostname.startsWith("[") && hostname.endsWith("]")
+    ? hostname.slice(1, -1)
+    : hostname;
+  const lower = h.toLowerCase();
+
+  // localhost / *.localhost
+  if (lower === "localhost" || lower.endsWith(".localhost")) return true;
+
+  // 0.0.0.0
+  if (lower === "0.0.0.0") return true;
+
+  // IPv6 loopback / unspecified / unique-local / link-local
+  if (lower === "::" || lower === "::1") return true;
+  if (lower.startsWith("fc") || lower.startsWith("fd")) return true;
+  if (
+    lower.startsWith("fe8") || lower.startsWith("fe9") ||
+    lower.startsWith("fea") || lower.startsWith("feb")
+  ) return true;
+
+  // IPv4 checks – only apply when it looks like a dotted-decimal address
+  const parts = lower.split(".");
+  if (parts.length === 4 && parts.every((p) => /^\d+$/.test(p))) {
+    const [a, b, c] = parts.map(Number);
+    if (a === 127) return true;                                      // 127.0.0.0/8
+    if (a === 10) return true;                                       // 10.0.0.0/8
+    if (a === 192 && b === 168) return true;                         // 192.168.0.0/16
+    if (a === 172 && b >= 16 && b <= 31) return true;               // 172.16.0.0/12
+    if (a === 169 && b === 254) return true;                         // 169.254.0.0/16 link-local
+  }
+
+  return false;
+}
+
 export function isManifest(targetUrl: string, contentType: string): boolean {
   if (/mpegurl/i.test(contentType)) return true;
   try { return new URL(targetUrl).pathname.toLowerCase().endsWith(".m3u8"); }
@@ -81,6 +116,10 @@ export default {
     const now = Date.now();
     if (exp < now) return new Response("expired", { status: 403 });
     if (!(await verify(target, exp, sig, env.STREAM_PROXY_SECRET))) return new Response("forbidden", { status: 403 });
+
+    // SSRF guard: block private/loopback/link-local targets after signature passes
+    const targetHostname = new URL(target).hostname;
+    if (isBlockedHost(targetHostname)) return new Response("forbidden host", { status: 403 });
 
     const range = request.headers.get("Range");
     const upstream = await fetch(target, { headers: range ? { Range: range } : {}, redirect: "follow" });
