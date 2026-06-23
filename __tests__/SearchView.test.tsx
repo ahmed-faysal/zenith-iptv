@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SearchView } from "@/components/SearchView";
@@ -26,7 +26,7 @@ vi.mock("@/lib/storage", () => ({
 
 // Mock useEpg
 const epgMap = {
-  "CNN": { now: { channel: "CNN", start: 0, stop: 9999999999999, title: "World Cup Final" } },
+  "CNN.us": { now: { channel: "CNN.us", start: 0, stop: 9999999999999, title: "World Cup Final" } },
 };
 vi.mock("@/hooks/useEpg", () => ({
   useEpg: () => epgMap,
@@ -56,11 +56,10 @@ describe("SearchView EPG section", () => {
   });
 
   it("does not show a channel in both sections (dedup)", async () => {
-    // "cnn" matches CNN by name AND by EPG — should only appear under Channels
     render(<SearchView />);
     const input = screen.getByPlaceholderText("Search channels…");
     await userEvent.type(input, "world cup");
-    // CNN appears in EPG section (World Cup Final is on CNN.us, EPG key "CNN")
+    // CNN appears in EPG section (World Cup Final is on CNN.us)
     // CNN does NOT match by name for "world cup"
     // So it only appears in the EPG section — verify the subtitle shows
     const subtitleEl = screen.queryByText("Now · World Cup Final");
