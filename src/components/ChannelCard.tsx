@@ -7,8 +7,8 @@ import { parseChannelName, isHd } from "@/lib/channel-name";
 // clean title, and any status flags. Focus styling (scale + ring + glow) lives
 // in globals.css via the .channel-card class so it's uniform with the D-pad.
 export function ChannelCard({
-  channel, onSelect,
-}: { channel: Channel; onSelect: (c: Channel) => void }) {
+  channel, onSelect, subtitle,
+}: { channel: Channel; onSelect: (c: Channel) => void; subtitle?: string }) {
   const [broken, setBroken] = useState(false);
   const { title, quality: parsedQuality, flags } = parseChannelName(channel.name);
   const quality = channel.quality ?? parsedQuality;
@@ -41,6 +41,9 @@ export function ChannelCard({
         )}
       </span>
       <span className="channel-card__title">{title}</span>
+      {subtitle && (
+        <span className="channel-card__subtitle">{subtitle}</span>
+      )}
       {flags.length > 0 && (
         <span className="channel-card__flags">{flags.join(" · ")}</span>
       )}

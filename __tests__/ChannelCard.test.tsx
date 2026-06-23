@@ -41,4 +41,12 @@ describe("ChannelCard", () => {
     render(<ChannelCard channel={{ ...ch, name: "Channel A", quality: "480p" }} onSelect={() => {}} />);
     expect(screen.getByText("480p")).toBeInTheDocument();
   });
+  it("renders the subtitle when provided", () => {
+    render(<ChannelCard channel={ch} onSelect={() => {}} subtitle="Now · Match of the Day" />);
+    expect(screen.getByText("Now · Match of the Day")).toBeInTheDocument();
+  });
+  it("renders nothing extra when subtitle is omitted", () => {
+    const { container } = render(<ChannelCard channel={ch} onSelect={() => {}} />);
+    expect(container.querySelector(".channel-card__subtitle")).toBeNull();
+  });
 });
