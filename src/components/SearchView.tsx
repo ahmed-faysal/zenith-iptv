@@ -4,30 +4,43 @@ import { useRouter } from "next/navigation";
 import type { Channel, AppCategory } from "@/lib/types";
 import { CategoryRow } from "./CategoryRow";
 import { useChannels } from "@/hooks/useChannels";
+import { useEpg } from "@/hooks/useEpg";
 import { isBackKey } from "@/lib/keys";
-import { searchChannels } from "@/lib/search";
+import { searchChannels, searchProgrammes } from "@/lib/search";
+import type { EpgResult } from "@/lib/search";
 import { getRecents, setLastChannel, pushRecent } from "@/lib/storage";
 
 const ORDER: AppCategory[] = ["News", "Sports", "Entertainment", "Music", "Kids", "Other"];
-const BROWSE_LIMIT = 20; // per-category teaser size in the pre-typing state
+const BROWSE_LIMIT = 20;
 
 export function SearchView() {
   const router = useRouter();
   const { channels } = useChannels();
   const list = useMemo(() => channels ?? [], [channels]);
+  const epg = useEpg();
   const [q, setQ] = useState("");
   const backRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
   const typing = q.trim().length > 0;
-  const results = useMemo(() => searchChannels(list, q), [list, q]);
+
+  const nameResults = useMemo(() => searchChannels(list, q), [list, q]);
+
+  const epgResults = useMemo((): EpgResult[] => {
+    if (!q.trim()) return [];
+    const exclude = new Set(nameResults.map((c) => c.id));
+    return searchProgrammes(epg, list, q, exclude);
+  }, [epg, list, q, nameResults]);
+
+  const epgSubtitleMap = useMemo(
+    () => new Map(epgResults.map((r) => [r.channel.id, r.subtitle])),
+    [epgResults],
+  );
 
   const byId = new Map(list.map((c) => [c.id, c]));
   const recents = getRecents().map((id) => byId.get(id)).filter(Boolean) as Channel[];
 
-  // Remote Back/Escape returns Home — but Backspace must still edit the query
-  // while the user is typing in the box.
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const editing = document.activeElement === inputRef.current && q !== "";
@@ -46,10 +59,10 @@ export function SearchView() {
   const focusFirstResult = () =>
     resultsRef.current?.querySelector<HTMLElement>("[data-focusable]")?.focus();
 
+  const bothEmpty = nameResults.length === 0 && epgResults.length === 0;
+
   return (
     <main className="search-main">
-      {/* Glassy header: an on-screen Back (for pointer/Magic-Remote users) beside
-          the search field, styled like the player chrome. */}
       <div className="search-bar">
         <button
           ref={backRef}
@@ -88,10 +101,22 @@ export function SearchView() {
         }}
       >
         {typing ? (
-          results.length > 0 ? (
-            <CategoryRow title={`Results (${results.length})`} channels={results} onSelect={open} />
+          bothEmpty ? (
+            <p className="search-empty">No channels match "{q.trim()}".</p>
           ) : (
-            <p className="search-empty">No channels match “{q.trim()}”.</p>
+            <>
+              <CategoryRow
+                title={`Channels`}
+                channels={nameResults}
+                onSelect={open}
+              />
+              <CategoryRow
+                title="On now · Next"
+                channels={epgResults.map((r) => r.channel)}
+                onSelect={open}
+                subtitleFor={(c) => epgSubtitleMap.get(c.id)}
+              />
+            </>
           )
         ) : (
           <>

@@ -28,7 +28,8 @@ export function searchProgrammes(
   for (const c of channels) {
     if (out.length >= limit) break;
     if (exclude.has(c.id)) continue;
-    const entry = epgMap[baseChannelId(c.id)];
+    const baseId = baseChannelId(c.id);
+    const entry = epgMap[baseId] ?? epgMap[baseId.split(".")[0]];
     if (!entry) continue;
     if (entry.now?.title.toLowerCase().includes(needle)) {
       out.push({ channel: c, subtitle: `Now · ${entry.now.title}` });
