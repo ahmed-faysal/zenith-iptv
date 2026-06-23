@@ -33,4 +33,16 @@ describe("CategoryRow", () => {
     render(<CategoryRow title="Other" channels={many} onSelect={() => {}} />);
     expect(screen.getAllByRole("button")).toHaveLength(50);
   });
+  it("passes subtitle to ChannelCard via subtitleFor", () => {
+    const subtitleFor = (c: Channel) => c.id === "a" ? "Now · Test Show" : undefined;
+    render(
+      <CategoryRow
+        title="News"
+        channels={channels}
+        onSelect={() => {}}
+        subtitleFor={subtitleFor}
+      />
+    );
+    expect(screen.getByText("Now · Test Show")).toBeInTheDocument();
+  });
 });

@@ -5,7 +5,7 @@ import { ChannelCard } from "./ChannelCard";
 import { useFocusNav } from "@/hooks/useFocusNav";
 
 export function CategoryRow({
-  title, channels, onSelect, onRemove, onSeeAll, limit,
+  title, channels, onSelect, onRemove, onSeeAll, limit, subtitleFor,
 }: {
   title: string;
   channels: Channel[];
@@ -13,6 +13,7 @@ export function CategoryRow({
   onRemove?: (c: Channel) => void;
   onSeeAll?: () => void;
   limit?: number;
+  subtitleFor?: (c: Channel) => string | undefined;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   useFocusNav(ref, { orientation: "horizontal" });
@@ -45,7 +46,7 @@ export function CategoryRow({
               </button>
             </div>
           ) : (
-            <ChannelCard key={c.id} channel={c} onSelect={onSelect} />
+            <ChannelCard key={c.id} channel={c} onSelect={onSelect} subtitle={subtitleFor?.(c)} />
           )
         )}
       </div>
