@@ -106,7 +106,7 @@ export function SearchView() {
           ) : (
             <>
               <CategoryRow
-                title={`Channels`}
+                title="Channels"
                 channels={nameResults}
                 onSelect={open}
               />
