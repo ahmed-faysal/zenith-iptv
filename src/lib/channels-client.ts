@@ -2,8 +2,10 @@ import type { Channel } from "./types";
 
 export type ChannelsFetcher = () => Promise<Channel[]>;
 
-const defaultFetcher: ChannelsFetcher = () =>
-  fetch("/api/channels").then((r) => r.json()).then((d) => d.channels ?? []);
+const defaultFetcher: ChannelsFetcher = () => {
+  const base = process.env.NEXT_PUBLIC_API_BASE ?? "";
+  return fetch(`${base}/api/channels`).then((r) => r.json()).then((d) => d.channels ?? []);
+};
 
 // Session-wide cache: the ~2.67 MB channel list is fetched once and shared
 // across Home / Watch / Search instead of being re-downloaded per navigation.

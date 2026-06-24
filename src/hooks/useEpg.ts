@@ -11,9 +11,10 @@ export function useEpg(refreshMs = 5 * 60 * 1000): EpgMap {
   const [epg, setEpg] = useState<EpgMap>({});
 
   useEffect(() => {
+    const base = process.env.NEXT_PUBLIC_API_BASE ?? "";
     let alive = true;
     const load = () =>
-      fetch("/api/epg")
+      fetch(`${base}/api/epg`)
         .then((r) => r.json())
         .then((d) => { if (alive) setEpg(d.epg ?? {}); })
         .catch(() => {});
