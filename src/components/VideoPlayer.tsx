@@ -135,7 +135,12 @@ export function VideoPlayer({
     <div style={{ position: "absolute", inset: 0, background: "#000" }}>
       <video ref={videoRef} style={{ width: "100%", height: "100%" }} controls={false} />
       {status === "loading" && (
-        <Centered>{sourceIdx > 0 ? "Trying another source…" : "Loading…"}</Centered>
+        <Centered>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+            <span className="ltv-spinner" role="status" aria-label="Loading" />
+            {sourceIdx > 0 && <span style={{ fontSize: 14, opacity: 0.7 }}>Trying another source…</span>}
+          </div>
+        </Centered>
       )}
       {status === "error" && <Centered>Stream unavailable — try another channel</Centered>}
       {status === "playing" && buffering && (

@@ -5,7 +5,10 @@ export async function GET() {
   try {
     const channels = await getChannels();
     return NextResponse.json({ channels }, {
-      headers: { "Access-Control-Allow-Origin": "*" },
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Cache-Control": "public, max-age=3600",
+      },
     });
   } catch (e) {
     return NextResponse.json(

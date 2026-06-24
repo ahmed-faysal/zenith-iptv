@@ -4,8 +4,8 @@ Single source of truth for outstanding work. The changelog of shipped fixes live
 in git history (`git log`); this file tracks what's **still open** plus the
 research worth keeping.
 
-Last reviewed: 2026-06-21 — shipped stream failover + multi-source merge, activated
-EPG, deployed to production.
+Last reviewed: 2026-06-25 — shipped webOS static export + EPG search; UX/reliability
+polish pass (spinner, EPG idle pause, channel cache, search focus, grid reset).
 
 ---
 
@@ -39,8 +39,20 @@ EPG, deployed to production.
   [spec](superpowers/specs/2026-06-18-epg-revival.md).
 - **Deployed** — `zenith-iptv.vercel.app` (Vercel; production from `main`; the
   `epg` data branch is excluded from deploys via `vercel.json`).
-- **Tests** — app 199 passing + worker 14; lint clean (one pre-existing `<img>`
-  warning) + production build clean.
+- **webOS packaged app** — `scripts/build-webos.sh` produces a static export
+  (`WEBOS_BUILD=1`, api/ dir temporarily moved out); CORS headers + absolute
+  `NEXT_PUBLIC_API_BASE` let the `.ipk` call Vercel APIs from the TV's home IP.
+  Routes migrated to query-params (`/watch?id=`, `/category?slug=`) for static
+  export compatibility. [plan](superpowers/plans/2026-06-24-webos-static-export.md).
+- **EPG keyword search** — "On now / next" section in SearchView; `searchProgrammes`
+  over the loaded EPG map; subtitle on ChannelCard. [spec](superpowers/specs/2026-06-23-epg-search-design.md).
+- **UX / reliability polish** — loading spinner on initial stream fetch (not just
+  mid-playback stalls); EPG polling pauses via Page Visibility API when the app is
+  backgrounded; `/api/channels` returns `Cache-Control: public, max-age=3600`;
+  search input focus uses `useEffect` (webOS-safe); `useGridFocus` accepts a
+  `resetKey` so category navigation re-lands focus correctly.
+- **Tests** — 222 passing; lint clean (one pre-existing `<img>` warning) +
+  production build clean.
 
 ---
 
@@ -57,11 +69,8 @@ EPG, deployed to production.
    (server-only), and `NEXT_PUBLIC_STREAM_PROXY_ENABLED=1`; redeploy; verify a
    known http/CORS channel (e.g. Fox Sports) plays.
    [spec](superpowers/specs/2026-06-22-stream-proxy-design.md).
-2. [ ] **EPG match / keyword search** ("what's on now"). Design ready (parked
-   when the proxy work started): one search box, sectioned results — channel-name
-   matches + an "On now / next" section over the EPG titles; pure client-side over
-   the loaded `useEpg` map; a `ProgrammeRow` + a `subtitle` on `ChannelCard`. The
-   proxy makes its results more likely to actually play.
+2. [x] **EPG match / keyword search** — SHIPPED. Sectioned results in SearchView:
+   channel-name matches + "On now / next" from the loaded EPG map.
 3. [ ] **Install on the LG TV.** [webos/README.md](../webos/README.md): add
    placeholder icons, `ares-package webos/`, install the `.ipk` via the Homebrew
    Channel. (The only remaining deploy/device step.)

@@ -13,17 +13,22 @@ function grid(container: HTMLElement): HTMLElement[][] {
 // `ready` gates the initial focus (content is on screen); `navEnabled` gates the
 // arrow-key navigation separately, so a modal can suspend grid nav without the
 // initial-focus effect re-firing and yanking focus back when the modal closes.
+// `resetKey` re-triggers initial focus when the view context changes (e.g. category
+// navigation) without unmounting the component — pass the active category/route.
 export function useGridFocus(
   ref: RefObject<HTMLElement | null>,
   ready: boolean,
-  navEnabled: boolean = ready
+  navEnabled: boolean = ready,
+  resetKey?: unknown
 ) {
   // Initial focus: land on the first card as soon as content is present, so a
-  // remote-only TV has somewhere to start.
+  // remote-only TV has somewhere to start. Re-runs when resetKey changes so
+  // focus lands correctly after in-place category switches.
   useEffect(() => {
     if (!ready || !ref.current) return;
     grid(ref.current)[0]?.[0]?.focus();
-  }, [ref, ready]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ref, ready, resetKey]);
 
   // Vertical row-to-row navigation, preserving the column index.
   useEffect(() => {

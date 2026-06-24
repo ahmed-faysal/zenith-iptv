@@ -27,7 +27,7 @@ export function BrowseView({ category = "All" }: { category?: string }) {
   const mainRef = useRef<HTMLElement>(null);
 
   const ready = !!channels && !error;
-  useGridFocus(mainRef, ready, ready && !showSettings);
+  useGridFocus(mainRef, ready, ready && !showSettings, category);
 
   // Most-common languages/countries in the catalogue — drives the settings
   // pick-lists, capped so they stay navigable with a remote.

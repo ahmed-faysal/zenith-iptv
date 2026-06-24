@@ -23,6 +23,9 @@ export function SearchView() {
   const inputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
 
+  // autoFocus is silently ignored on some webOS Chromium builds; use effect instead.
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
   const typing = q.trim().length > 0;
 
   const nameResults = useMemo(() => searchChannels(list, q), [list, q]);
@@ -81,7 +84,6 @@ export function SearchView() {
           <span className="search-field__icon" aria-hidden>🔍</span>
           <input
             ref={inputRef}
-            autoFocus
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onKeyDown={(e) => {
