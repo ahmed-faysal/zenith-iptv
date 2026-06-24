@@ -42,3 +42,12 @@ next-env.d.ts
 
 # webOS build artifacts
 *.ipk
+/webos/_next/
+/webos/_not-found/
+/webos/category/
+/webos/search/
+/webos/watch/
+/webos/*.html
+/webos/*.txt
+/webos/*.svg
+/webos/*.ico

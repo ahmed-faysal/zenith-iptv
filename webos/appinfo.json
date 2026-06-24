@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "vendor": "Fays Tech",
   "type": "web",
-  "main": "https://zenith-iptv.vercel.app",
+  "main": "index.html",
   "title": "Zenith",
   "icon": "icon.png",
   "largeIcon": "largeIcon.png",

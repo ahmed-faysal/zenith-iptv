@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  ...(process.env.WEBOS_BUILD === "1" && { output: "export" }),
 };
 
 export default nextConfig;
