@@ -61,7 +61,7 @@ export function BrowseView({ category = "All" }: { category?: string }) {
     setLastChannel(c.id);
     pushRecent(c.id);
     setRecentIds(getRecents());
-    router.push(`/watch/${encodeURIComponent(c.id)}`);
+    router.push(`/watch?id=${encodeURIComponent(c.id)}`);
   }
 
   function removeFromRecents(c: Channel) {

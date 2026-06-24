@@ -53,7 +53,7 @@ export function SearchView() {
   function open(c: Channel) {
     setLastChannel(c.id);
     pushRecent(c.id);
-    router.push(`/watch/${encodeURIComponent(c.id)}`);
+    router.push(`/watch?id=${encodeURIComponent(c.id)}`);
   }
 
   const focusFirstResult = () =>
