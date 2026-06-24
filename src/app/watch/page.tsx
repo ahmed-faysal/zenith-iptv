@@ -6,7 +6,7 @@ import { WatchView } from "@/components/WatchView";
 function Watch() {
   const params = useSearchParams();
   const id = params.get("id") ?? "";
-  return <WatchView channelId={decodeURIComponent(id)} />;
+  return <WatchView channelId={id} />;
 }
 
 export default function Page() {

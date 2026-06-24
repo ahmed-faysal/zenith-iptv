@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
 
 # All API routes are dynamic Route Handlers — incompatible with static export.
 # The webOS app never calls them directly (it points at the Vercel deployment
@@ -14,7 +15,7 @@ trap cleanup EXIT
 WEBOS_BUILD=1 \
   NEXT_PUBLIC_API_BASE=https://zenith-iptv.vercel.app \
   NEXT_PUBLIC_STREAM_PROXY_ENABLED=0 \
-  npx next build
+  npm run build
 
 # Copy the static export into the webOS package directory.
 # appinfo.json, icon.png, and largeIcon.png already live in webos/
