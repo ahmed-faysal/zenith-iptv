@@ -70,7 +70,7 @@ export function BrowseView({ category = "All" }: { category?: string }) {
   }
 
   function goToCategory(cat: string) {
-    router.push(cat === "All" ? "/" : `/category/${cat.toLowerCase()}`);
+    router.push(cat === "All" ? "/" : `/category?slug=${cat.toLowerCase()}`);
   }
 
   return (
