@@ -14,8 +14,13 @@ export async function GET() {
       const nn = nowNext(programmes, at);
       if (nn.now || nn.next) out[id] = nn;
     }
-    return NextResponse.json({ epg: out });
+    return NextResponse.json({ epg: out }, {
+      headers: { "Access-Control-Allow-Origin": "*" },
+    });
   } catch (e) {
-    return NextResponse.json({ epg: {}, error: (e as Error).message }, { status: 502 });
+    return NextResponse.json(
+      { epg: {}, error: (e as Error).message },
+      { status: 502, headers: { "Access-Control-Allow-Origin": "*" } },
+    );
   }
 }
