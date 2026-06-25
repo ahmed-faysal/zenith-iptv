@@ -1,46 +1,96 @@
-# LG webOS Packaging (Live TV)
+# Zenith — LG webOS Package
 
-This folder packages the app as a **hosted webOS app**: a thin wrapper that opens
-the deployed Vercel URL fullscreen on your LG OLED TV. The app code lives on
-Vercel — the TV just launches it, so site updates appear with no reinstall.
+This folder is the **packaged static app** for your LG OLED. The build script
+exports the Next.js app as plain HTML/JS, copies it here, and `ares-package`
+bundles it into an `.ipk` you install via webOS Dev Manager.
 
-Your TV already has the **Homebrew Channel** installed, so no root and no
-50-hour developer-mode expiry: you can install the `.ipk` and keep it.
+Streams play from your home IP (no Cloudflare datacenter blocks), and the TV's
+native HLS pipeline handles playback without CORS restrictions.
 
-## One-time prerequisites (on your computer)
+---
 
-1. Install the webOS CLI:
+## Prerequisites (one-time)
+
+1. **Developer Mode** on your TV — sign in at
+   `developer.lge.com/develop/sdk-tools/webos-tv-dev-mode-app` and enable it
+   from the Dev Mode app on the TV.
+2. **webOS CLI** on your Mac:
    ```bash
    npm install -g @webos-tools/cli
    ```
-2. Add two placeholder PNG icons in this `webos/` folder (replace with the real
-   app logo later — tracked as a future improvement in the spec):
-   - `icon.png` — 80×80
-   - `largeIcon.png` — 130×130
+3. **webOS Dev Manager** — you already have this (GUI tool for device setup and
+   `.ipk` install).
 
-## Set your deployed URL
+---
 
-After deploying to Vercel (`npx vercel --prod` from the project root), copy the
-production URL and replace `https://YOUR-PROJECT.vercel.app` in
-[`appinfo.json`](./appinfo.json) with it.
+## Step 1 — Register your TV in Dev Manager
 
-## Build and install the IPK
+Open webOS Dev Manager → **Add Device** → enter your TV's IP address
+(Settings → Network → Wi-Fi Connection Info on the TV).
+Give it a name like `lg-oled`. Leave port as `9922`.
+
+Verify it works:
+```bash
+ares-device-info --device lg-oled
+```
+
+---
+
+## Step 2 — Build the static export
+
+From the project root:
+```bash
+bash scripts/build-webos.sh
+```
+
+This temporarily moves `src/app/api/` out of the source tree, runs
+`next build` with `WEBOS_BUILD=1` (static export mode), copies the output into
+`webos/`, then restores the API directory. The `webos/` folder now contains
+`index.html` + all assets.
+
+---
+
+## Step 3 — Package
 
 ```bash
 # from the project root
-ares-package webos/
-
-# install to the TV (replace with your TV's device name from `ares-setup-device`)
-ares-install --device <tv-name> com.personal.livetv_1.0.0_all.ipk
+ares-package webos/ --outdir .
 ```
 
-Alternatively, copy the generated `.ipk` to a USB stick and install it via the
-**Homebrew Channel** on the TV.
+This produces `com.faystech.zenith_1.0.0_all.ipk` in the project root.
+
+---
+
+## Step 4 — Install via webOS Dev Manager
+
+**Option A — GUI (easiest):**
+1. Open webOS Dev Manager
+2. Select your TV device
+3. Click **Install** → pick `com.faystech.zenith_1.0.0_all.ipk`
+4. The app appears in the TV's app list under "Zenith"
+
+**Option B — CLI:**
+```bash
+ares-install --device lg-oled com.faystech.zenith_1.0.0_all.ipk
+ares-launch --device lg-oled com.faystech.zenith
+```
+
+---
+
+## Updating the app
+
+After code changes, repeat Steps 2–4. The install overwrites the previous
+version; no uninstall needed.
+
+---
 
 ## Notes
 
-- `type: "web"` + `main: <url>` makes this a hosted app — the TV renders the
-  Vercel site in its built-in browser engine, fullscreen.
-- Navigation is driven by the TV remote's D-pad (arrow keys) and OK/Back, which
-  the app already handles via its focus-navigation hook.
-- Expect 15–45s of HLS latency on live streams; this is normal for browser IPTV.
+- **API calls** go to `https://zenith-iptv.vercel.app` (set at build time via
+  `NEXT_PUBLIC_API_BASE`). Vercel parses M3U files and serves channel/EPG data;
+  streams play directly from the TV.
+- **Back key** (webOS keyCode 461) is handled throughout — remote navigation
+  works without a mouse.
+- **Developer Mode** on LG TVs expires every 50 hours unless you refresh it in
+  the Dev Mode app. If the app disappears, re-enable Dev Mode and reinstall.
+- App ID: `com.faystech.zenith` · Version: `1.0.0`

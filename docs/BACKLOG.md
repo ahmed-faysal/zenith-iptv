@@ -71,9 +71,9 @@ polish pass (spinner, EPG idle pause, channel cache, search focus, grid reset).
    [spec](superpowers/specs/2026-06-22-stream-proxy-design.md).
 2. [x] **EPG match / keyword search** — SHIPPED. Sectioned results in SearchView:
    channel-name matches + "On now / next" from the loaded EPG map.
-3. [ ] **Install on the LG TV.** [webos/README.md](../webos/README.md): add
-   placeholder icons, `ares-package webos/`, install the `.ipk` via the Homebrew
-   Channel. (The only remaining deploy/device step.)
+3. [ ] **Install on the LG TV.** [webos/README.md](../webos/README.md): run
+   `bash scripts/build-webos.sh`, then `ares-package webos/ --outdir .`, then
+   install `com.faystech.zenith_1.0.0_all.ipk` via webOS Dev Manager GUI.
 
 Beyond that, see [IDEAS.md](IDEAS.md) for the ranked in-browser picks (alt_names
 search, "Most Watched", signal-quality chip).
@@ -129,7 +129,9 @@ in-browser picks: alt_names search, "Most Watched", a signal-quality chip.
 Parked from the original spec
 ([design](superpowers/specs/2026-06-16-personal-live-tv-design.md)):
 
-- [ ] **App icon / logo** — hand-crafted SVG → PNG sizes for webOS + favicon.
+- [x] **App icon / logo** — DONE. Zenith cyan Z-circle logo: webOS icon.png (80×80),
+  largeIcon.png (130×130), browser favicon (src/app/icon.png), TopBar mark,
+  OpenGraph metadata. Source SVG at public/zenith-logo.svg.
 - [ ] **Catchup / TV-archive** — parse `catchup` / `catchup-source` from `#EXTINF`
   to rewind live programming where supported.
 - [ ] **PWA install** — manifest + service worker for clean phone install.
