@@ -15,6 +15,15 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Zenith",
   description: "Free live TV channels from around the world",
+  icons: {
+    icon: "/zenith-icon.png",
+    apple: "/zenith-icon.png",
+  },
+  openGraph: {
+    title: "Zenith",
+    description: "Free live TV channels from around the world",
+    images: [{ url: "/zenith-icon.png", width: 512, height: 512 }],
+  },
 };
 
 export default function RootLayout({

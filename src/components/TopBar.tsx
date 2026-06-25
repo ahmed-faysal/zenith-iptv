@@ -26,7 +26,7 @@ export function TopBar({
   return (
     <div ref={ref} data-row className="app-bar">
       <div className="app-bar__brand">
-        <span className="app-bar__mark" aria-hidden>📺</span>
+        <img src="/zenith-icon.png" alt="" aria-hidden width={32} height={32} className="app-bar__mark" />
         <span className="app-bar__name">Zenith</span>
       </div>
 

@@ -428,15 +428,11 @@ input[type="checkbox"][data-focusable]:focus {
   flex: 0 0 auto;
 }
 .app-bar__mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   width: 34px;
   height: 34px;
-  border-radius: 9px;
-  font-size: 18px;
-  background: linear-gradient(150deg, #4da3ff, #2f7ad6);
-  box-shadow: 0 4px 14px rgba(77, 163, 255, 0.45);
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
 }
 .app-bar__name {
   font-size: clamp(17px, 1.4vw, 22px);
