@@ -14,6 +14,7 @@ describe("NEXT_PUBLIC_API_BASE prefix", () => {
     await loadChannels();
     expect(fetchSpy).toHaveBeenCalledWith(
       expect.stringContaining("https://example.com/api/channels"),
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
     fetchSpy.mockRestore();
   });
@@ -26,7 +27,10 @@ describe("NEXT_PUBLIC_API_BASE prefix", () => {
     );
     const { loadChannels } = await import("@/lib/channels-client");
     await loadChannels();
-    expect(fetchSpy).toHaveBeenCalledWith("/api/channels");
+    expect(fetchSpy).toHaveBeenCalledWith(
+      "/api/channels",
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
     fetchSpy.mockRestore();
   });
 });

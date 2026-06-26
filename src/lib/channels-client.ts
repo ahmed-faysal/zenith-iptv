@@ -4,7 +4,12 @@ export type ChannelsFetcher = () => Promise<Channel[]>;
 
 const defaultFetcher: ChannelsFetcher = () => {
   const base = process.env.NEXT_PUBLIC_API_BASE ?? "";
-  return fetch(`${base}/api/channels`).then((r) => r.json()).then((d) => d.channels ?? []);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 20_000);
+  return fetch(`${base}/api/channels`, { signal: controller.signal })
+    .then((r) => r.json())
+    .then((d) => d.channels ?? [])
+    .finally(() => clearTimeout(timer));
 };
 
 // Session-wide cache: the ~2.67 MB channel list is fetched once and shared
