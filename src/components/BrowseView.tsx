@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useAppNav } from "@/hooks/useAppNav";
 import type { Channel, AppCategory } from "@/lib/types";
 import { CategoryRow } from "./CategoryRow";
 import { CategoryPage } from "./CategoryPage";
@@ -20,7 +20,7 @@ const FILTER_OPTIONS = 24; // most-common languages/countries offered in Setting
 // a specific category (a single vertical grid). Each tab/category is a real URL
 // so Back from the player returns to where you were.
 export function BrowseView({ category = "All" }: { category?: string }) {
-  const router = useRouter();
+  const nav = useAppNav();
   const { channels, error } = useChannels();
   const [showSettings, setShowSettings] = useState(false);
   const [recentIds, setRecentIds] = useState<string[]>(() => getRecents());
@@ -61,7 +61,7 @@ export function BrowseView({ category = "All" }: { category?: string }) {
     setLastChannel(c.id);
     pushRecent(c.id);
     setRecentIds(getRecents());
-    router.push(`/watch?id=${encodeURIComponent(c.id)}`);
+    nav.push(`/watch?id=${encodeURIComponent(c.id)}`);
   }
 
   function removeFromRecents(c: Channel) {
@@ -70,7 +70,7 @@ export function BrowseView({ category = "All" }: { category?: string }) {
   }
 
   function goToCategory(cat: string) {
-    router.push(cat === "All" ? "/" : `/category?slug=${cat.toLowerCase()}`);
+    nav.push(cat === "All" ? "/" : `/category?slug=${cat.toLowerCase()}`);
   }
 
   return (
@@ -79,14 +79,14 @@ export function BrowseView({ category = "All" }: { category?: string }) {
         categories={TABS}
         activeCategory={category}
         onCategory={goToCategory}
-        onSearch={() => router.push("/search")}
+        onSearch={() => nav.push("/search")}
         onSettings={() => setShowSettings(true)}
       />
       {showSettings && (
         <SettingsPanel
           languages={allLanguages}
           countries={allCountries}
-          onClose={() => { setShowSettings(false); router.refresh(); }}
+          onClose={() => { setShowSettings(false); nav.refresh(); }}
         />
       )}
 

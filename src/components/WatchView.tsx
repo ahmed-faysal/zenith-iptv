@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useAppNav } from "@/hooks/useAppNav";
 import type { Level } from "./QualitySelector";
 import { VideoPlayer } from "./VideoPlayer";
 import { PlayerOverlay } from "./PlayerOverlay";
@@ -13,7 +13,7 @@ import { setLastChannel, pushRecent, toggleFavorite, isFavorite } from "@/lib/st
 import { expandPlaybackUrls } from "@/lib/playback-urls";
 
 export function WatchView({ channelId }: { channelId: string }) {
-  const router = useRouter();
+  const nav = useAppNav();
   const { channels: loaded } = useChannels();
   const channels = loaded ?? [];
   const epg = useEpg();
@@ -73,16 +73,18 @@ export function WatchView({ channelId }: { channelId: string }) {
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (isBackKey(e) || e.key === "Backspace") { router.back(); return; }
+      if (isBackKey(e) || e.key === "Backspace") { nav.back(); return; }
       const m = mediaAction(e);
       if (m === "toggle") setPaused((p) => !p);
       else if (m === "play") setPaused(false);
       else if (m === "pause") setPaused(true);
-      else if (m === "stop") router.back();
+      else if (m === "stop") nav.back();
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [router]);
+  // nav is recreated each render but back() is stateless; bind the listener once.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function toggleFav() {
     if (!active) return;
@@ -122,7 +124,7 @@ export function WatchView({ channelId }: { channelId: string }) {
         visible={showChrome}
         onTogglePlay={() => setPaused((p) => !p)}
         onToggleFavorite={toggleFav}
-        onBack={() => router.back()}
+        onBack={() => nav.back()}
         onVolumeChange={(v) => { setVolume(v); if (v > 0) setMuted(false); }}
         onToggleMute={() => setMuted((m) => !m)}
         onFullscreen={toggleFullscreen}

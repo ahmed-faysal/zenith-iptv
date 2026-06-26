@@ -2,6 +2,10 @@
 import { useRef } from "react";
 import { useFocusNav } from "@/hooks/useFocusNav";
 
+// Public assets sit at the package root; on webOS (file://) they must be
+// referenced relatively, on the web build they stay absolute.
+const ASSET_BASE = process.env.NEXT_PUBLIC_WEBOS === "1" ? "." : "";
+
 // The app bar: brand on the left, scrollable category tabs in the middle, and
 // Search/Settings on the right. It's a single data-row so useGridFocus treats it
 // as the first navigable row and left/right walks tabs → actions. Category props
@@ -26,7 +30,7 @@ export function TopBar({
   return (
     <div ref={ref} data-row className="app-bar">
       <div className="app-bar__brand">
-        <img src="/zenith-icon.png" alt="" aria-hidden width={32} height={32} className="app-bar__mark" />
+        <img src={`${ASSET_BASE}/zenith-icon.png`} alt="" aria-hidden width={32} height={32} className="app-bar__mark" />
         <span className="app-bar__name">Zenith</span>
       </div>
 

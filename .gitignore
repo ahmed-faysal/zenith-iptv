@@ -51,3 +51,8 @@ next-env.d.ts
 /webos/*.txt
 /webos/*.svg
 /webos/*.ico
+# Public assets copied into the package by build-webos.sh (the tracked app
+# icons are icon.png / largeIcon.png, declared in appinfo.json).
+/webos/zenith-icon.png
+/webos/favicon.ico
+/webos/zenith-logo.svg

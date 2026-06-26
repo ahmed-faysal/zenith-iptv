@@ -13,6 +13,7 @@ cleanup() { mv "$API_BACKUP/api" "$API_DIR"; rmdir "$API_BACKUP" 2>/dev/null || 
 trap cleanup EXIT
 
 WEBOS_BUILD=1 \
+  NEXT_PUBLIC_WEBOS=1 \
   NEXT_PUBLIC_API_BASE=https://zenith-iptv.vercel.app \
   NEXT_PUBLIC_STREAM_PROXY_ENABLED=0 \
   npm run build

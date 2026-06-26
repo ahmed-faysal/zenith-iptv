@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useAppNav } from "@/hooks/useAppNav";
 import type { Channel, AppCategory } from "@/lib/types";
 import { CategoryRow } from "./CategoryRow";
 import { useChannels } from "@/hooks/useChannels";
@@ -14,7 +14,7 @@ const ORDER: AppCategory[] = ["News", "Sports", "Entertainment", "Music", "Kids"
 const BROWSE_LIMIT = 20;
 
 export function SearchView() {
-  const router = useRouter();
+  const nav = useAppNav();
   const { channels } = useChannels();
   const list = useMemo(() => channels ?? [], [channels]);
   const epg = useEpg();
@@ -47,16 +47,19 @@ export function SearchView() {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const editing = document.activeElement === inputRef.current && q !== "";
-      if (isBackKey(e) || (e.key === "Backspace" && !editing)) router.push("/");
+      if (isBackKey(e) || (e.key === "Backspace" && !editing)) nav.push("/");
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [router, q]);
+  // nav is recreated each render; the back action is stateless, so we only
+  // re-bind when the query (which gates the back-vs-edit decision) changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q]);
 
   function open(c: Channel) {
     setLastChannel(c.id);
     pushRecent(c.id);
-    router.push(`/watch?id=${encodeURIComponent(c.id)}`);
+    nav.push(`/watch?id=${encodeURIComponent(c.id)}`);
   }
 
   const focusFirstResult = () =>
@@ -72,9 +75,9 @@ export function SearchView() {
           data-focusable
           aria-label="Back"
           className="icon-btn"
-          onClick={() => router.push("/")}
+          onClick={() => nav.push("/")}
           onKeyDown={(e) => {
-            if (e.key === "Enter") { e.preventDefault(); router.push("/"); }
+            if (e.key === "Enter") { e.preventDefault(); nav.push("/"); }
             if (e.key === "ArrowDown") { e.preventDefault(); inputRef.current?.focus(); }
           }}
         >
