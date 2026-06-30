@@ -5,7 +5,7 @@
 // 3) headless hls.js play-test (file:// origin, app's hlsConfig) to keep only
 //    channels that actually play, working URL first,
 // 4) write src/data/curated.json.
-import { writeFileSync, mkdirSync, copyFileSync, mkdtempSync } from "node:fs";
+import { writeFileSync, mkdirSync, copyFileSync, mkdtempSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { createRequire } from "node:module";
@@ -46,6 +46,7 @@ async function pool<T>(items: T[], n: number, fn: (item: T) => Promise<void>): P
   const queue = [...items];
   await Promise.all(
     Array.from({ length: n }, async () => {
+      // Safe: queue.length check and shift() are atomic in single-threaded JS.
       while (queue.length) await fn(queue.shift()!);
     }),
   );
@@ -60,6 +61,7 @@ async function poolWithResource<T, R>(
   const queue = [...items];
   await Promise.all(
     resources.map(async (res) => {
+      // Safe: queue.length check and shift() are atomic in single-threaded JS.
       while (queue.length) await fn(queue.shift()!, res);
     }),
   );
@@ -93,36 +95,39 @@ async function main() {
   const browser = await puppeteer.launch({
     args: ["--autoplay-policy=no-user-gesture-required", "--mute-audio"],
   });
-  const pages = await Promise.all(
-    Array.from({ length: CONCURRENCY }, async () => {
-      const p = await browser.newPage();
-      await p.goto(harnessUrl);
-      return p;
-    }),
-  );
-
   const playable: Channel[] = [];
-  let tdone = 0;
-  await poolWithResource(probed, pages, async ({ channel, okUrls }, page) => {
-    for (const url of okUrls) {
-      const ok = await page
-        .evaluate(
-          (u, c, t) =>
-            (window as unknown as { testStream: (u: string, c: object, t: number) => Promise<boolean> })
-              .testStream(u, JSON.parse(c), t),
-          url, cfg, PLAY_TIMEOUT_MS,
-        )
-        .catch(() => false);
-      if (ok) {
-        playable.push(reorderWorkingFirst(channel, url));
-        break;
-      }
-    }
-    if (++tdone % 50 === 0)
-      console.log(`  play-tested ${tdone}/${probed.length} (playable: ${playable.length})`);
-  });
+  try {
+    const pages = await Promise.all(
+      Array.from({ length: CONCURRENCY }, async () => {
+        const p = await browser.newPage();
+        await p.goto(harnessUrl);
+        return p;
+      }),
+    );
 
-  await browser.close();
+    let tdone = 0;
+    await poolWithResource(probed, pages, async ({ channel, okUrls }, page) => {
+      for (const url of okUrls) {
+        const ok = await page
+          .evaluate(
+            (u, c, t) =>
+              (window as unknown as { testStream: (u: string, c: object, t: number) => Promise<boolean> })
+                .testStream(u, JSON.parse(c), t),
+            url, cfg, PLAY_TIMEOUT_MS,
+          )
+          .catch(() => false);
+        if (ok) {
+          playable.push(reorderWorkingFirst(channel, url));
+          break;
+        }
+      }
+      if (++tdone % 50 === 0)
+        console.log(`  play-tested ${tdone}/${probed.length} (playable: ${playable.length})`);
+    });
+  } finally {
+    await browser.close();
+    rmSync(work, { recursive: true, force: true });
+  }
 
   const summary: ValidationSummary = {
     candidates: candidates.length,
