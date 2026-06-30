@@ -51,7 +51,13 @@ polish pass (spinner, EPG idle pause, channel cache, search focus, grid reset).
   backgrounded; `/api/channels` returns `Cache-Control: public, max-age=3600`;
   search input focus uses `useEffect` (webOS-safe); `useGridFocus` accepts a
   `resetKey` so category navigation re-lands focus correctly.
-- **Tests** — 222 passing; lint clean (one pre-existing `<img>` warning) +
+- **Curated catalogue** — `/api/channels` serves `src/data/curated.json`, a
+  locally-validated list (no live merge). Refresh by running `npm run validate`
+  on the home network (fast HTTP probe + headless hls.js play-test over a
+  file:// origin so geo/IP/CORS match the TV), then commit `src/data/curated.json`
+  and push; Vercel redeploys and the TV picks it up on next launch. Spec:
+  docs/superpowers/specs/2026-06-30-curated-catalogue-design.md.
+- **Tests** — 243 passing; lint clean (one pre-existing `<img>` warning) +
   production build clean.
 
 ---
