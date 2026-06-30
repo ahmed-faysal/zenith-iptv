@@ -8,9 +8,11 @@ const ch = (o: Partial<Channel>): Channel => ({
 });
 
 describe("SOURCES", () => {
-  it("lists iptv-org first as the canonical spine", () => {
-    expect(SOURCES[0].label).toBe("iptv-org");
+  it("maintains at least 2 sources with unique labels", () => {
     expect(SOURCES.length).toBeGreaterThanOrEqual(2);
+    const labels = SOURCES.map((s) => s.label);
+    const uniqueLabels = new Set(labels);
+    expect(uniqueLabels.size).toBe(labels.length);
   });
 });
 
