@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+  <head><meta charset="utf-8" /><title>Zenith stream validator</title></head>
+  <body>
+    <script src="./hls.min.js"></script>
+    <script>
+      // Resolve true when a fragment actually buffers (real playback), false on
+      // any fatal error or timeout. Mirrors VideoPlayer's hls.js/native split so
+      // "plays here" implies "plays on the TV". Loaded over file:// so CORS and
+      // mixed-content match the packaged webOS app.
+      window.testStream = function (url, config, timeoutMs) {
+        return new Promise(function (resolve) {
+          var video = document.createElement("video");
+          video.muted = true;
+          var hls = null;
+          var done = false;
+          function finish(ok) {
+            if (done) return;
+            done = true;
+            clearTimeout(timer);
+            try { if (hls) hls.destroy(); } catch (e) {}
+            resolve(ok);
+          }
+          var timer = setTimeout(function () { finish(false); }, timeoutMs);
+          if (window.Hls && window.Hls.isSupported()) {
+            hls = new Hls(config);
+            hls.loadSource(url);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.FRAG_BUFFERED, function () { finish(true); });
+            hls.on(Hls.Events.ERROR, function (_e, data) { if (data.fatal) finish(false); });
+            video.play().catch(function () {});
+          } else {
+            video.src = url;
+            video.addEventListener("loadeddata", function () { finish(true); });
+            video.addEventListener("error", function () { finish(false); });
+            video.play().catch(function () {});
+          }
+        });
+      };
+    </script>
+  </body>
+</html>
