@@ -16,10 +16,18 @@ export function hlsConfig(): Partial<HlsConfig> {
     // Tighten per-attempt timeouts so a dead stream fails fast. Our
     // planRecovery handles retries; hls.js internal retries on top would
     // multiply the wait (default 10s × 2 internal × 2 planRecovery = 40s+).
-    manifestLoadingTimeOut: 8000,
-    levelLoadingTimeOut: 8000,
+    // Kept below DEAD_SOURCE_TIMEOUT_MS so hls.js's own error path always runs
+    // before our backstop timer does.
+    manifestLoadingTimeOut: 5000,
+    levelLoadingTimeOut: 5000,
   };
 }
+
+// Backstop for a source that neither plays nor errors — a server that accepts
+// the connection and then goes silent, where hls.js emits no event at all.
+// Deliberately short: with up to 4 sources per channel, a 15s budget meant a
+// fully dead channel spun for a minute, which on a remote reads as a hang.
+export const DEAD_SOURCE_TIMEOUT_MS = 7000;
 
 // "12:43 AM" — explicit 12-hour formatting (deterministic, unlike
 // toLocaleTimeString which varies by host locale).

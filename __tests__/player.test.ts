@@ -41,10 +41,10 @@ describe("hlsConfig", () => {
     expect(hlsConfig().capLevelToPlayerSize).toBe(true);
   });
   it("sets a tight manifest timeout so dead streams fail fast", () => {
-    expect(hlsConfig().manifestLoadingTimeOut).toBe(8000);
+    expect(hlsConfig().manifestLoadingTimeOut).toBeLessThanOrEqual(5000);
   });
   it("sets a tight level timeout matching the manifest timeout", () => {
-    expect(hlsConfig().levelLoadingTimeOut).toBe(8000);
+    expect(hlsConfig().levelLoadingTimeOut).toBe(hlsConfig().manifestLoadingTimeOut);
   });
   it("returns a fresh object each call (hls.js may mutate its config)", () => {
     expect(hlsConfig()).not.toBe(hlsConfig());

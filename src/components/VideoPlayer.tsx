@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
 import type { Level } from "./QualitySelector";
-import { hlsConfig, planRecovery, nextSource, type FatalKind, type RecoveryState } from "@/lib/player";
+import { hlsConfig, planRecovery, nextSource, DEAD_SOURCE_TIMEOUT_MS, type FatalKind, type RecoveryState } from "@/lib/player";
 
 type Status = "loading" | "playing" | "error";
 
@@ -30,8 +30,18 @@ export function VideoPlayer({
   // Distinct from `status`: a mid-playback stall while already playing.
   const [buffering, setBuffering] = useState(false);
 
+  // Callers build `srcs` inline (see WatchView), so it is a fresh array on every
+  // parent render — including ones that have nothing to do with playback, like
+  // the overlay auto-hiding. Keying the setup effect on array *identity* tore
+  // the stream down and reconnected it a few seconds into every channel, so key
+  // it on the URLs themselves and read the list through a ref.
+  const srcKey = srcs.join("|");
+  const srcsRef = useRef(srcs);
+  srcsRef.current = srcs;
+
   useEffect(() => {
-    const src = srcs[sourceIdx] ?? srcs[0];
+    const list = srcsRef.current;
+    const src = list[sourceIdx] ?? list[0];
     const video = videoRef.current;
     if (!video) return;
     setStatus("loading");
@@ -43,14 +53,14 @@ export function VideoPlayer({
 
     // Move to the next source, or surface the error when none are left.
     const fail = () => {
-      const next = nextSource(sourceIdx, srcs.length);
+      const next = nextSource(sourceIdx, list.length);
       if (next === null) setStatus("error");
       else setSourceIdx(next);
     };
 
-    // Hard cap: a source that neither plays nor errors within 15s is treated as
-    // dead (covers servers that accept the connection but never respond).
-    const timer = setTimeout(() => { if (!started) fail(); }, 15_000);
+    // Hard cap: a source that neither plays nor errors is treated as dead
+    // (covers servers that accept the connection but never respond).
+    const timer = setTimeout(() => { if (!started) fail(); }, DEAD_SOURCE_TIMEOUT_MS);
 
     if (Hls.isSupported()) {
       const hls = new Hls(hlsConfig());
@@ -91,7 +101,7 @@ export function VideoPlayer({
       video.removeEventListener("loadeddata", onLoaded);
       video.removeEventListener("error", onErr);
     };
-  }, [sourceIdx, srcs, onLevels]);
+  }, [sourceIdx, srcKey, onLevels]);
 
   // Buffering indicator: `waiting` stalls, `playing`/`canplay` resume. Native
   // media events, so they cover both the hls.js and Safari paths. Attached once.
@@ -138,7 +148,11 @@ export function VideoPlayer({
         <Centered>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
             <span className="ltv-spinner" role="status" aria-label="Loading" />
-            {sourceIdx > 0 && <span style={{ fontSize: 14, opacity: 0.7 }}>Trying another source…</span>}
+            {sourceIdx > 0 && (
+              <span style={{ fontSize: 20, opacity: 0.75 }}>
+                Trying source {sourceIdx + 1} of {srcs.length}…
+              </span>
+            )}
           </div>
         </Centered>
       )}
