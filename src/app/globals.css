@@ -131,12 +131,15 @@ input[type="checkbox"][data-focusable]:focus {
   color: rgba(255, 255, 255, 0.55);
 }
 
+/* Metadata sizes below scale with the viewport rather than sitting at a fixed
+   ~11px: at 1080p+ that is unreadable from the couch (10-foot UI), while a
+   desktop browser window still needs the small end. */
 .channel-card__quality {
   position: absolute;
   right: 7px;
   bottom: 7px;
   padding: 2px 7px;
-  font-size: 11px;
+  font-size: clamp(11px, 0.95vw, 18px);
   font-weight: 700;
   letter-spacing: 0.3px;
   border-radius: 6px;
@@ -151,7 +154,7 @@ input[type="checkbox"][data-focusable]:focus {
 }
 
 .channel-card__title {
-  font-size: clamp(13px, 0.95vw, 16px);
+  font-size: clamp(13px, 1.15vw, 22px);
   font-weight: 600;
   line-height: 1.25;
   text-align: center;
@@ -163,7 +166,7 @@ input[type="checkbox"][data-focusable]:focus {
 }
 
 .channel-card__flags {
-  font-size: 11px;
+  font-size: clamp(11px, 0.9vw, 17px);
   font-weight: 600;
   text-align: center;
   color: #f0b252;
@@ -171,7 +174,7 @@ input[type="checkbox"][data-focusable]:focus {
 }
 
 .channel-card__subtitle {
-  font-size: 11px;
+  font-size: clamp(11px, 1vw, 19px);
   font-weight: 500;
   text-align: center;
   opacity: 0.6;
@@ -414,7 +417,7 @@ input[type="checkbox"][data-focusable]:focus {
   display: flex;
   align-items: center;
   gap: 20px;
-  padding: 14px clamp(16px, 3vw, 54px);
+  padding: clamp(14px, 2.2vh, 28px) clamp(16px, 3vw, 54px);
   background: rgba(8, 10, 16, 0.72);
   -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
@@ -528,8 +531,8 @@ input[type="checkbox"][data-focusable]:focus {
   margin-left: auto;
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.4);
-  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: clamp(13px, 1vw, 19px);
   font-weight: 500;
   cursor: pointer;
   padding: 2px 0;
@@ -548,7 +551,7 @@ input[type="checkbox"][data-focusable]:focus {
   letter-spacing: 0.2px;
 }
 .cat-row__count {
-  font-size: 13px;
+  font-size: clamp(13px, 0.95vw, 18px);
   font-weight: 700;
   color: #8b96a5;
   padding: 2px 8px;
@@ -589,7 +592,7 @@ input[type="checkbox"][data-focusable]:focus {
 }
 
 .cat-page__count {
-  font-size: 13px;
+  font-size: clamp(13px, 0.95vw, 18px);
   font-weight: 700;
   color: #8b96a5;
   padding: 2px 8px;
