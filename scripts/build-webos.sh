@@ -26,7 +26,8 @@ cp -r out/. webos/
 echo ""
 echo "✓ Static export copied to webos/"
 echo ""
+VERSION=$(node -p "require('./webos/appinfo.json').version")
 echo "Next steps:"
-echo "  Package:  ares-package webos/ --outdir ."
-echo "  Install:  ares-install com.faystech.zenith_1.0.0_all.ipk"
+echo "  Package:  ares-package webos/ --outdir . --no-minify"
+echo "  Install:  ares-install com.faystech.zenith_${VERSION}_all.ipk"
 echo "  Launch:   ares-launch com.faystech.zenith"

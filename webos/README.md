@@ -54,10 +54,22 @@ This temporarily moves `src/app/api/` out of the source tree, runs
 
 ```bash
 # from the project root
-ares-package webos/ --outdir .
+ares-package webos/ --outdir . --no-minify
 ```
 
-This produces `com.faystech.zenith_1.0.0_all.ipk` in the project root.
+**`--no-minify` is required.** Without it `ares-package` runs the Next.js output
+through its bundled uglify-js, which cannot parse the modern syntax Next 16
+emits and fails with `Failed to minify code`. The flag is real but missing from
+`ares-package --help`. Nothing is lost — the export is already SWC-minified.
+
+You may also see `ERR! uncaughtException TypeError: rimraf is not a function`
+*after* the "Create com.faystech.zenith_..." line. That is a bug in the CLI's
+temp-directory cleanup (rimraf v4 changed its export shape), not a packaging
+failure — check that the `.ipk` exists and carry on. It also breaks
+`ares-package --info`; inspect a package with `ar x <file>.ipk` instead.
+
+This produces `com.faystech.zenith_<version>_all.ipk` in the project root
+(the version comes from `webos/appinfo.json` — currently `1.0.2`).
 
 ---
 
@@ -66,12 +78,12 @@ This produces `com.faystech.zenith_1.0.0_all.ipk` in the project root.
 **Option A — GUI (easiest):**
 1. Open webOS Dev Manager
 2. Select your TV device
-3. Click **Install** → pick `com.faystech.zenith_1.0.0_all.ipk`
+3. Click **Install** → pick `com.faystech.zenith_1.0.2_all.ipk`
 4. The app appears in the TV's app list under "Zenith"
 
 **Option B — CLI:**
 ```bash
-ares-install --device lg-oled com.faystech.zenith_1.0.0_all.ipk
+ares-install --device lg-oled com.faystech.zenith_1.0.2_all.ipk
 ares-launch --device lg-oled com.faystech.zenith
 ```
 
@@ -87,10 +99,13 @@ version; no uninstall needed.
 ## Notes
 
 - **API calls** go to `https://zenith-iptv.vercel.app` (set at build time via
-  `NEXT_PUBLIC_API_BASE`). Vercel parses M3U files and serves channel/EPG data;
-  streams play directly from the TV.
+  `NEXT_PUBLIC_API_BASE`). Vercel serves the validated channel catalogue and EPG
+  data; streams play directly from the TV. Because the catalogue is data on the
+  server, re-running `npm run validate` and pushing updates the TV on its next
+  launch — **no rebuild or reinstall needed**. Only app *code* changes (player,
+  styles, navigation) require repackaging.
 - **Back key** (webOS keyCode 461) is handled throughout — remote navigation
   works without a mouse.
 - **Developer Mode** on LG TVs expires every 50 hours unless you refresh it in
   the Dev Mode app. If the app disappears, re-enable Dev Mode and reinstall.
-- App ID: `com.faystech.zenith` · Version: `1.0.0`
+- App ID: `com.faystech.zenith` · Version: `1.0.2` (bump in `webos/appinfo.json`)
