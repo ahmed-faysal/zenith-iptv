@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { toChannelsXml, scopeChannelIds, type GuideEntry } from "@/lib/epg-channels";
+import { toChannelsXml, scopeChannelIds, BLOCKED_SITES, type GuideEntry } from "@/lib/epg-channels";
 
 const guides: GuideEntry[] = [
   { channel: "BBCNews.uk", site: "bbc.co.uk", site_id: "b1", lang: "en" },
@@ -69,5 +69,33 @@ describe("scopeChannelIds", () => {
 
   it("matches country codes case-insensitively", () => {
     expect(scopeChannelIds(channels, ["uk"])).toEqual(new Set(["BBCNews.uk", "Sky.uk"]));
+  });
+});
+
+describe("blocked grabber sites", () => {
+  const withBad: GuideEntry[] = [
+    { channel: "BBCNews.uk", site: "bbc.co.uk", site_id: "b1", lang: "en" },
+    { channel: "BBCNews.uk", site: "tv.mail.ru", site_id: "m1", lang: "ru" },
+  ];
+
+  it("lists tv.mail.ru as blocked (its config crashes the whole grab)", () => {
+    expect(BLOCKED_SITES.has("tv.mail.ru")).toBe(true);
+  });
+
+  it("omits rows from blocked sites by default", () => {
+    const xml = toChannelsXml(withBad, new Set(["BBCNews.uk"]));
+    expect(xml).toContain('site="bbc.co.uk"');
+    expect(xml).not.toContain("tv.mail.ru");
+  });
+
+  it("keeps the channel as long as one non-blocked site remains", () => {
+    const xml = toChannelsXml(withBad, new Set(["BBCNews.uk"]));
+    expect(xml.match(/<channel /g)).toHaveLength(1);
+  });
+
+  it("accepts an explicit block set, overriding the default", () => {
+    const xml = toChannelsXml(withBad, new Set(["BBCNews.uk"]), new Set(["bbc.co.uk"]));
+    expect(xml).toContain("tv.mail.ru");
+    expect(xml).not.toContain('site="bbc.co.uk"');
   });
 });

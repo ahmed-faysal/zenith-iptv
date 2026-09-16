@@ -5,6 +5,14 @@
 import type { Channel } from "./types";
 import { baseChannelId } from "./epg";
 
+// Grabber site configs that abort the entire run rather than failing their own
+// channel. tv.mail.ru answers rate-limited requests with an HTML challenge page
+// that its config feeds straight to JSON.parse, throwing unhandled and killing
+// the grab with exit 1 -- which silently stopped the guide updating for 10 days
+// (2026-09-06 to 2026-09-16). Excluding a site costs only that site's rows;
+// channels it covers are almost always served by another site too.
+export const BLOCKED_SITES = new Set(["tv.mail.ru"]);
+
 export type GuideEntry = {
   channel: string; // xmltv_id
   site: string;
@@ -18,11 +26,16 @@ function escapeAttr(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
-export function toChannelsXml(guides: GuideEntry[], ids: Set<string>): string {
+export function toChannelsXml(
+  guides: GuideEntry[],
+  ids: Set<string>,
+  blocked: Set<string> = BLOCKED_SITES,
+): string {
   const seen = new Set<string>();
   const rows: string[] = [];
   for (const g of guides) {
     if (!ids.has(g.channel)) continue;
+    if (blocked.has(g.site)) continue;
     const key = `${g.channel}|${g.site}|${g.site_id}`;
     if (seen.has(key)) continue;
     seen.add(key);
