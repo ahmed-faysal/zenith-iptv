@@ -120,6 +120,7 @@ channels). These now-actionable items would improve it:
 | **#9 arrow-seek ±5s** | Live streams, no DVR buffer — nothing to seek. Contradicts the live-only design in [keys.ts](../src/lib/keys.ts). |
 | **#12 IPv4/IPv6 prefer** | A browser can't choose IP version per-request (OS resolver does); streams are single URLs. |
 | **#15 is_nsfw surfacing** | Same as #22 — no nsfw in our source. |
+| **Stream validation in CI / on a schedule** | Would produce a catalogue that is *wrong for the target device*. The validator play-tests over a `file://` origin (opaque, like the packaged `.ipk`) from the home network; a GitHub Actions runner has a US datacenter IP and a different origin, so it gets different answers on **both** axes that matter — geo-blocking and CORS. It would silently drop channels that work in the living room and keep ones that don't. Validation stays local and manual **by design**; the resumability work (2026-09-16) is what makes that practical. Only an always-on box on the home network (e.g. a Pi committing `curated.json`) could automate it without losing fidelity. |
 
 ---
 

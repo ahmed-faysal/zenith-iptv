@@ -1,9 +1,10 @@
 # Zenith
 
-A personal live-TV (IPTV) app for the browser and the living-room TV. It pulls a
-free channel list from [iptv-org](https://github.com/iptv-org/iptv), plays HLS
-streams with [hls.js](https://github.com/video-dev/hls.js), and is built to be
-driven entirely by a TV remote's D-pad — no mouse or keyboard required.
+A personal live-TV (IPTV) app for the browser and the living-room TV. It serves a
+**locally validated** channel list — every channel is play-tested before it ships,
+so a tile you pick actually plays — streams HLS with
+[hls.js](https://github.com/video-dev/hls.js), and is built to be driven entirely
+by a TV remote's D-pad — no mouse or keyboard required.
 
 > Personal/non-commercial use. Streams come from the public iptv-org playlist;
 > this project doesn't host or rebroadcast any content.
@@ -28,10 +29,13 @@ driven entirely by a TV remote's D-pad — no mouse or keyboard required.
     channel that has a working backup.
   - **Now playing (EPG)** — when guide data is available the subtitle shows
     "Now · <programme>" for the current show.
-- **Channels** — a single catalogue merged from several public M3U sources
-  (iptv-org + Free-TV + others) behind one `/api/channels` seam: more coverage,
-  and the same channel found in multiple sources contributes backup URLs to the
-  failover. Add a source in one line in [`src/lib/sources.ts`](src/lib/sources.ts).
+- **Channels** — a **curated, play-tested catalogue** (610 channels) served
+  behind one `/api/channels` seam. Candidates are merged from several public M3U
+  sources (iptv-org + Free-TV + others — add one in a line in
+  [`src/lib/sources.ts`](src/lib/sources.ts)), then filtered by
+  [`npm run validate`](#validating-the-catalogue) so only streams that genuinely
+  play are shipped. The same channel found in multiple sources contributes
+  backup URLs to the failover.
 - **Search** (`/search`) — live name search over the full catalogue, fully
   remote-navigable.
 - **Settings** — slide-in sidebar to filter the catalogue by language/country
@@ -56,9 +60,10 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The first load fetches and
-parses the iptv-org playlist (cached server-side for an hour), so give it a
-moment to populate.
+Open [http://localhost:3000](http://localhost:3000). Channels come from the
+committed `src/data/curated.json`; if that file is ever empty the app falls back
+to fetching and merging the live playlists (cached server-side for an hour), so
+it never starts up blank.
 
 ### Controls (keyboard ≈ TV remote)
 
@@ -86,7 +91,32 @@ npm run start    # serve the production build
 npm test         # run the test suite (vitest)
 npm run test:watch
 npm run lint     # eslint
+npm run validate # re-validate the channel catalogue (see below)
 ```
+
+## Validating the catalogue
+
+Free public M3U sources are mostly dead: of 3,980 merged candidates, 2,937 answer
+an HTTP probe but only **610 actually play** in a browser. `npm run validate`
+measures that directly rather than guessing — a fast HTTP probe, then a headless
+hls.js play-test over a `file://` origin (opaque, exactly like the packaged webOS
+app) — and writes the survivors to `src/data/curated.json`.
+
+**Run it on your home network.** Geo-blocking and CORS both depend on where the
+request comes from, so results from a cloud runner would be wrong for the TV.
+That's deliberate; see the rejected "validation in CI" entry in
+[docs/IDEAS.md](docs/IDEAS.md).
+
+```bash
+npm run validate -- --limit 50   # ~90s smoke run
+npm run validate                 # full pass (~110 min), resumable
+npm run validate -- --fresh      # discard the checkpoint, re-test everything
+```
+
+A full pass checkpoints to `.validate-checkpoint.json` (gitignored) and flushes
+periodically, so Ctrl-C or a crash costs at most the last few channels — re-run
+to resume. Commit `src/data/curated.json` when you're happy with the result; a
+*partial* run produces a valid but short catalogue, which ships as-is.
 
 ## Project structure
 
@@ -114,9 +144,10 @@ separately by [`/api/epg`](src/app/api/epg/route.ts).
 
 ## Status & roadmap
 
-Live in production at [zenith-iptv.vercel.app](https://zenith-iptv.vercel.app)
-with multi-source channels, automatic stream failover, and the EPG ("now/next")
-program guide active. Remaining work — the LG TV install, an `mpegts.js` fallback
-for non-HLS streams, and further ideas — is tracked in
-[docs/BACKLOG.md](docs/BACKLOG.md); webOS packaging/install steps live in
+Live in production at [zenith-iptv.vercel.app](https://zenith-iptv.vercel.app):
+610 validated channels (189 KB, ~0.24s), automatic stream failover, and the EPG
+("now/next") guide showing a current programme on ~40% of channels. Remaining
+work — the LG TV install, better categorisation (46% of channels land in
+"Other"), and growing the catalogue with higher-reliability sources — is tracked
+in [docs/BACKLOG.md](docs/BACKLOG.md); webOS packaging/install steps live in
 [webos/README.md](webos/README.md).

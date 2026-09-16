@@ -4,8 +4,9 @@ Single source of truth for outstanding work. The changelog of shipped fixes live
 in git history (`git log`); this file tracks what's **still open** plus the
 research worth keeping.
 
-Last reviewed: 2026-06-25 — shipped webOS static export + EPG search; UX/reliability
-polish pass (spinner, EPG idle pause, channel cache, search focus, grid reset).
+Last reviewed: 2026-09-16 — first real curated catalogue shipped (610 validated
+channels); validator made resumable; EPG guide build repaired after a 10-day
+silent outage; player restart + slow-failover fixes.
 
 ---
 
@@ -51,14 +52,27 @@ polish pass (spinner, EPG idle pause, channel cache, search focus, grid reset).
   backgrounded; `/api/channels` returns `Cache-Control: public, max-age=3600`;
   search input focus uses `useEffect` (webOS-safe); `useGridFocus` accepts a
   `resetKey` so category navigation re-lands focus correctly.
-- **Curated catalogue** — `/api/channels` serves `src/data/curated.json`, a
-  locally-validated list (no live merge). Refresh by running `npm run validate`
-  on the home network (fast HTTP probe + headless hls.js play-test over a
-  file:// origin so geo/IP/CORS match the TV), then commit `src/data/curated.json`
-  and push; Vercel redeploys and the TV picks it up on next launch. Spec:
-  docs/superpowers/specs/2026-06-30-curated-catalogue-design.md.
-- **Tests** — 243 passing; lint clean (one pre-existing `<img>` warning) +
-  production build clean.
+- **Curated catalogue — LIVE, 610 channels.** `/api/channels` serves
+  `src/data/curated.json`. An **empty** curated file falls back to the live
+  source merge (`resolveCatalogue`) so a missing/unpopulated file can never
+  blank the app — but note a *partial* file is served as-is, so only commit a
+  run you're happy with. Measured funnel (2026-09-16): 3,980 candidates →
+  2,937 passed the HTTP probe → **610 actually played** (15% end-to-end).
+  Payload 3.69 MB → 189 KB; `/api/channels` 3.55s → 0.24s.
+  Spec: docs/superpowers/specs/2026-06-30-curated-catalogue-design.md.
+- **Validator is resumable.** `npm run validate` checkpoints every channel to
+  `.validate-checkpoint.json` (gitignored) and flushes periodically, so a full
+  ~110-minute pass can be interrupted and resumed instead of restarting.
+  `--limit N` for a 90-second smoke run, `--fresh` to re-test everything.
+  Run it on the home network — the play-test uses a `file://` origin so
+  geo/IP/CORS match the TV.
+- **EPG scoped to the curated list.** `build-epg-channels.ts` reuses
+  `resolveCatalogue`, so the guide covers exactly what the app serves: 3,711
+  ids / 6,740 grabber rows → 600 / 1,506. Guide 18 MB → 2 MB, build 1.5-2.5h →
+  **13m36s**. Live coverage: 241 of 610 channels (40%) show "Now · …".
+- **Tests** — 278 passing; production build clean. (`npm run lint` reports ~25
+  errors / 8.8k warnings, all from eslint scanning the `out/` and `webos/`
+  build artifacts — add them to `ignores` in eslint.config.mjs.)
 
 ---
 
@@ -79,7 +93,19 @@ polish pass (spinner, EPG idle pause, channel cache, search focus, grid reset).
    channel-name matches + "On now / next" from the loaded EPG map.
 3. [ ] **Install on the LG TV.** [webos/README.md](../webos/README.md): run
    `bash scripts/build-webos.sh`, then `ares-package webos/ --outdir .`, then
-   install `com.faystech.zenith_1.0.0_all.ipk` via webOS Dev Manager GUI.
+   install the `.ipk` via webOS Dev Manager GUI.
+4. [ ] **Fix the "Other" bucket — 280 of 610 channels (46%) are uncategorised**,
+   making it the largest and least useful row on the home screen. The category
+   rows are the primary navigation, so this is the biggest UX win available.
+5. [ ] **Grow the catalogue.** 610 is thin (Kids has 5, Music 19). The lever is
+   more *candidates*, not better validation — the funnel is already 15%. Add the
+   official broadcaster tier (Red Bull TV and DW verified CORS-open + HTTP 200 on
+   2026-08-05; also Al Jazeera, France 24, NHK World, Bloomberg) as a
+   hand-maintained, high-reliability source, and consider tagging channels by
+   trust tier so the home rows prefer them.
+6. [ ] **Language metadata is missing on 608 of 610 channels**, so the Settings
+   language filter is effectively dead. Pre-existing (production had the same
+   gap), but curation makes it obvious. 49 channels also carry no country.
 
 Beyond that, see [IDEAS.md](IDEAS.md) for the ranked in-browser picks (alt_names
 search, "Most Watched", signal-quality chip).
@@ -112,6 +138,15 @@ ships no channels — but source of the mpegts.js / parser ideas above).
 
 ## 🟢 Open watch-items
 
+- [ ] **The EPG build can fail silently for days.** It did: ~40 consecutive
+  failed runs from 2026-09-06 to 2026-09-16, each burning 1.5-2.5h of runner
+  time, and nobody noticed because a stale guide degrades to "no programmes"
+  rather than an error. Cause was one grabber site (`tv.mail.ru`) answering
+  rate-limited requests with an HTML challenge page that its config feeds to
+  `JSON.parse` — the unhandled throw kills the **entire** grab, not just that
+  site. Mitigated by `BLOCKED_SITES` in `src/lib/epg-channels.ts`; add to that
+  set when another site does the same. Worth adding a freshness alert (e.g.
+  fail loudly if `epg` branch is older than ~24h) so the next one surfaces.
 - [ ] **OLED burn-in (LG C3).** Row titles and the TopBar sit in the same screen
   position every session. Low risk (dark theme mitigates), but keep home chrome
   low-luminance and avoid bright fixed badges/logos; revisit if an always-on HUD
