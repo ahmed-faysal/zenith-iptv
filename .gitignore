@@ -56,3 +56,6 @@ next-env.d.ts
 /webos/zenith-icon.png
 /webos/favicon.ico
 /webos/zenith-logo.svg
+
+# local validator checkpoint (resumable run state)
+/.validate-checkpoint.json
