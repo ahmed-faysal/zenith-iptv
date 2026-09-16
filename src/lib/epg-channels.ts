@@ -2,6 +2,8 @@
 // only the channels we surface that also have a guide mapping in guides.json.
 // Scoping here is what keeps the generated guide small (most channels have no
 // guide at all). Used by scripts/build-epg-channels.ts in CI.
+import type { Channel } from "./types";
+import { baseChannelId } from "./epg";
 
 export type GuideEntry = {
   channel: string; // xmltv_id
@@ -32,4 +34,16 @@ export function toChannelsXml(guides: GuideEntry[], ids: Set<string>): string {
     );
   }
   return `<?xml version="1.0" encoding="UTF-8"?>\n<channels>\n${rows.join("\n")}\n</channels>\n`;
+}
+
+// Which channel ids (base xmltv_id, no @feed suffix) the guide should cover,
+// optionally narrowed to a set of country codes. `channels` should be whatever
+// the app actually serves (see resolveCatalogue) so the guide never carries
+// entries for channels nobody will see.
+export function scopeChannelIds(channels: Channel[], countries: string[]): Set<string> {
+  const upper = countries.map((c) => c.toUpperCase());
+  const scoped = upper.length
+    ? channels.filter((c) => c.countries.some((x) => upper.includes(x.toUpperCase())))
+    : channels;
+  return new Set(scoped.map((c) => baseChannelId(c.id)));
 }

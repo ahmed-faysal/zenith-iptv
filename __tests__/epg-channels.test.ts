@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { toChannelsXml, type GuideEntry } from "@/lib/epg-channels";
+import { toChannelsXml, scopeChannelIds, type GuideEntry } from "@/lib/epg-channels";
 
 const guides: GuideEntry[] = [
   { channel: "BBCNews.uk", site: "bbc.co.uk", site_id: "b1", lang: "en" },
@@ -45,5 +45,29 @@ describe("toChannelsXml", () => {
     const dupes = [guides[0], { ...guides[0] }];
     const xml = toChannelsXml(dupes, new Set(["BBCNews.uk"]));
     expect(xml.match(/<channel /g)).toHaveLength(1);
+  });
+});
+
+describe("scopeChannelIds", () => {
+  const channels = [
+    { id: "BBCNews.uk@HD", name: "BBC News", logo: "", streamUrls: [], category: "News", languages: [], countries: ["UK"] },
+    { id: "CNN.us@SD", name: "CNN", logo: "", streamUrls: [], category: "News", languages: [], countries: ["US"] },
+    { id: "Sky.uk@HD", name: "Sky", logo: "", streamUrls: [], category: "News", languages: [], countries: ["UK"] },
+  ];
+
+  it("scopes to every channel's base id when no country filter is given", () => {
+    expect(scopeChannelIds(channels, [])).toEqual(new Set(["BBCNews.uk", "CNN.us", "Sky.uk"]));
+  });
+
+  it("strips the @feed suffix so ids match guides.json's base xmltv_id", () => {
+    expect(scopeChannelIds(channels, [])).not.toContain("BBCNews.uk@HD");
+  });
+
+  it("narrows to only channels in the given countries", () => {
+    expect(scopeChannelIds(channels, ["UK"])).toEqual(new Set(["BBCNews.uk", "Sky.uk"]));
+  });
+
+  it("matches country codes case-insensitively", () => {
+    expect(scopeChannelIds(channels, ["uk"])).toEqual(new Set(["BBCNews.uk", "Sky.uk"]));
   });
 });
